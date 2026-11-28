@@ -17,6 +17,9 @@ Built for the **Gujarat Energy Development Agency (GEDA)** by team **Beyond Logi
 
 **[▶ Demo video (1:30)](https://drive.google.com/file/d/1tO_5nZ16OITjVTpDeNKqhzACYESNHPkz/view)** · **[Website](https://nidhi-gujarat.vercel.app)** · **[Open the app](https://nidhi-app-rosy.vercel.app)** · **[Android app (APK)](https://nidhi-gujarat.vercel.app/get)** · [GEDA console](https://nidhi-gujarat.vercel.app/geda) · [DISCOM console](https://nidhi-gujarat.vercel.app/discom) · [API docs](https://lifeline-api-9ox2.onrender.com/docs) · [How we calculate](https://nidhi-gujarat.vercel.app/methodology) · [Design canvas](https://claude.ai/artifact/VdiyAQ5vFcb4wivcsi4vCX)
 
+**Try it without signing up** (password for all three: `NidhiDemo2036`):
+[the app](https://nidhi-app-rosy.vercel.app) as `demo-household@example.com` · [DISCOM console](https://nidhi-gujarat.vercel.app/login) as `demo-discom@example.com` · [GEDA console](https://nidhi-gujarat.vercel.app/login) as `demo-geda@example.com`. The two console logins are read-only.
+
 </div>
 
 ---
@@ -486,6 +489,7 @@ Not drawn: `society_announcements`, `notifications`, `climate_months` and `distr
 
 | What | Where |
 |---|---|
+| **Demo logins** (password `NidhiDemo2036`) | App: `demo-household@example.com` · DISCOM console: `demo-discom@example.com` · GEDA console: `demo-geda@example.com`. The sign-in pages have buttons that fill them in. |
 | Website, free bill check, Android QR code | https://nidhi-gujarat.vercel.app |
 | The Nidhi app in a browser | https://nidhi-app-rosy.vercel.app |
 | Android app (APK, the same link as the QR code) | https://nidhi-gujarat.vercel.app/get |
@@ -535,6 +539,8 @@ Or run everything with Docker: `docker compose up --build --wait` (PostgreSQL, A
 | App, Android | EAS (`mobile/eas.json`) | `cd mobile && npx eas-cli build -p android --profile preview` gives an installable APK (about 56 MB: real-phone CPUs only, with code and resource shrinking). Push needs `google-services.json` as the EAS file variable `GOOGLE_SERVICES_JSON` (read by `mobile/app.config.ts`) and the Firebase service account key in EAS credentials (FCM V1); both files are git-ignored. |
 
 Website environment (Vercel, production): `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL` (the app's web address) and `NEXT_PUBLIC_APK_URL` (the latest APK). The app reads `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_CONSOLE_URL` (GEDA) and `EXPO_PUBLIC_DISCOM_CONSOLE_URL` at build time. The meter secrets are derived from `JWT_SECRET`, so there is no new secret to set; rotating `JWT_SECRET` changes every simulated meter's secret, which only matters for a device linked earlier, so re-link it. A new web origin also needs adding to `cors_origin_regex` in `backend/app/config.py`.
+
+**Demo accounts.** `python -m app.seed` (which the API container runs on every start) also creates or refreshes three public logins: a household with rooftop solar, a **DISCOM auditor** for UGVCL and a **GEDA auditor**. Both staff roles are read-only, so the published password cannot change anything or notify a household, and it is reset on every deploy so it keeps working. Set `DEMO_ACCOUNTS=false` to switch them off, or `DEMO_PASSWORD` to change the password.
 
 DISCOM staff accounts are made the same way as GEDA's, from a shell on the API: `python -m app.create_admin --email ops@ugvcl.example --name "UGVCL Ops" --role discom_admin --discom ugvcl` (roles `discom_admin`, `discom_engineer`, `discom_auditor`; `--discom` is `ugvcl`, `mgvcl`, `dgvcl`, `pgvcl` or `torrent`).
 

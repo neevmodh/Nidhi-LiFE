@@ -10,6 +10,7 @@ import { LanguagePicker } from "@/components/language-picker";
 import { Body, Button, ErrorText, Field, Hero, Icon } from "@/components/ui";
 import { useI18n } from "@/i18n";
 import { ApiError } from "@/lib/api";
+import { DEMO } from "@/lib/demo";
 import { useSession } from "@/lib/session";
 import { fonts, radius, space, type, useColors } from "@/theme";
 
@@ -30,6 +31,18 @@ export default function SignIn() {
     setError(null);
     try {
       await signIn(mode === "email" ? { email: email.trim() } : { phone: phone.trim() }, password);
+    } catch (e) {
+      setError(e instanceof ApiError && e.status !== 0 ? e.message : t("mobile.serverDown"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function signInDemo() {
+    setBusy(true);
+    setError(null);
+    try {
+      await signIn({ email: DEMO.household }, DEMO.password);
     } catch (e) {
       setError(e instanceof ApiError && e.status !== 0 ? e.message : t("mobile.serverDown"));
     } finally {
@@ -111,6 +124,18 @@ export default function SignIn() {
 
         {error && <ErrorText>{error}</ErrorText>}
         <Button title={t("nav.signIn")} onPress={submit} busy={busy} icon="log-in-outline" />
+        <Button
+          variant="plain"
+          title={t("auth.demoTry")}
+          icon="flash-outline"
+          onPress={() => {
+            setMode("email");
+            setEmail(DEMO.household);
+            setPassword(DEMO.password);
+            void signInDemo();
+          }}
+        />
+        <Body muted>{t("auth.demoHint", { email: DEMO.household, password: DEMO.password })}</Body>
         <Body muted>
           {t("auth.newHere")}{" "}
           <Link href="/sign-up" style={{ color: c.greenDeep, fontWeight: "600" }}>

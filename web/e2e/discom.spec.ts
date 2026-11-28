@@ -137,3 +137,26 @@ test("the console fits a phone: pages scroll as a tab bar and nothing overflows 
     expect(overflow, `${path} scrolls sideways by ${overflow}px`).toBeLessThanOrEqual(1);
   }
 });
+
+test("a judge can open either console from the demo buttons, read-only, with no sign-up", async ({ page }) => {
+  await page.goto("/login");
+  await expect(page.getByText("demo-discom@example.com").first()).toBeVisible();
+  await page.getByRole("button", { name: "DISCOM console" }).click();
+  await expect(page.getByLabel("Email")).toHaveValue("demo-discom@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/discom$/);
+  await page.getByRole("link", { name: /^Outages/ }).first().click();
+  await expect(page.getByText("This account can view outages but not plan them.")).toBeVisible();
+
+  await page.evaluate(() => localStorage.clear());
+  await page.goto("/login");
+  await page.getByRole("button", { name: "GEDA console" }).click();
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/geda$/);
+  await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
+});
+
+test("the landing page shows the demo household login", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText(/demo-household@example\.com/).first()).toBeVisible();
+});

@@ -1442,5 +1442,12 @@
   "mobile.staffDiscomTitle": "DISCOM સ્ટાફ વેબ કન્સોલ પર સાઇન ઇન કરે છે",
   "mobile.staffDiscomBody": "ફોન એપ ઘરો માટે છે. ફીડર, અસામાન્યતા અને વીજ કાપ જોવા બ્રાઉઝરમાં DISCOM કન્સોલ ખોલો.",
   "mobile.openDiscomConsole": "DISCOM કન્સોલ ખોલો",
-  "dc.kpi.sending": "ગ્રિડને મોકલાય છે"
+  "dc.kpi.sending": "ગ્રિડને મોકલાય છે",
+  "login.demoTitle": "ડેમો અજમાવો",
+  "login.demoNote": "ફક્ત જોવા માટેના ખાતા, બધા માટે ખુલ્લા. ઘરો એપનો ઉપયોગ કરે છે.",
+  "login.demoDiscom": "DISCOM કન્સોલ",
+  "login.demoGeda": "GEDA કન્સોલ",
+  "hero.demo": "ફક્ત જોવું છે? એપ ખોલો અને {email} થી સાઇન ઇન કરો, પાસવર્ડ {password}. સાઇન-અપ જરૂરી નથી.",
+  "auth.demoTry": "ડેમો ખાતું અજમાવો",
+  "auth.demoHint": "સાઇન-અપ જરૂરી નથી: {email}, પાસવર્ડ {password}."
 }
