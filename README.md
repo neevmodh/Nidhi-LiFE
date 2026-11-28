@@ -15,7 +15,7 @@
 **Mission LiFE** · Green Energy & Sustainability<br/>
 Built for the **Gujarat Energy Development Agency (GEDA)** by team **Beyond Logic**
 
-**[▶ Demo video (1:30)](https://drive.google.com/file/d/1tO_5nZ16OITjVTpDeNKqhzACYESNHPkz/view)** · **[Website](https://nidhi-gujarat.vercel.app)** · **[Open the app](https://nidhi-app-rosy.vercel.app)** · **[Android app (APK)](https://nidhi-gujarat.vercel.app/get)** · [GEDA console](https://nidhi-gujarat.vercel.app/geda) · [DISCOM console](https://nidhi-gujarat.vercel.app/discom) · [API docs](https://lifeline-api-9ox2.onrender.com/docs) · [How we calculate](https://nidhi-gujarat.vercel.app/methodology) · [Design canvas](https://claude.ai/artifact/VdiyAQ5vFcb4wivcsi4vCX)
+**[▶ Demo video (2:21)](https://youtu.be/PRn3FF_PhPI)** · **[Website](https://nidhi-gujarat.vercel.app)** · **[Open the app](https://nidhi-app-rosy.vercel.app)** · **[Android app (APK)](https://nidhi-gujarat.vercel.app/get)** · [GEDA console](https://nidhi-gujarat.vercel.app/geda) · [DISCOM console](https://nidhi-gujarat.vercel.app/discom) · [API docs](https://lifeline-api-9ox2.onrender.com/docs) · [How we calculate](https://nidhi-gujarat.vercel.app/methodology) · [Design canvas](https://claude.ai/artifact/VdiyAQ5vFcb4wivcsi4vCX)
 
 **Try it without signing up** (password for all three: `NidhiDemo2036`):
 [the app](https://nidhi-app-rosy.vercel.app) as `demo-household@example.com` · [DISCOM console](https://nidhi-gujarat.vercel.app/login) as `demo-discom@example.com` · [GEDA console](https://nidhi-gujarat.vercel.app/login) as `demo-geda@example.com`. The two console logins are read-only.
@@ -496,7 +496,7 @@ Not drawn: `society_announcements`, `notifications`, `climate_months` and `distr
 | GEDA console (staff sign-in) | https://nidhi-gujarat.vercel.app/geda |
 | DISCOM console (staff sign-in) | https://nidhi-gujarat.vercel.app/discom |
 | Demo script for the live meter, agent and DISCOM console | [docs/BUILD2036-DEMO.md](docs/BUILD2036-DEMO.md) |
-| Demo video (1:30) | https://drive.google.com/file/d/1tO_5nZ16OITjVTpDeNKqhzACYESNHPkz/view |
+| Demo video (2:21) | https://youtu.be/PRn3FF_PhPI |
 | API and interactive docs | https://lifeline-api-9ox2.onrender.com/docs |
 
 The API runs on Render's free tier, which sleeps when idle. A scheduled GitHub Action pings it every 10 minutes to keep it awake, and the app and website retry reads and sign-in while it wakes, so a first sign-in waits instead of failing.
