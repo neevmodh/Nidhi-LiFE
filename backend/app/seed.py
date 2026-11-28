@@ -10,12 +10,16 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.db import SessionLocal
 from app.i18n import tr
 from app.migrate import upgrade_to_head
-from app.models import ActionType, District
+from app.models import ActionType, District, EnergyReading, Household, Role, User
+from app.security import hash_password
 from app.services import factors
+from app.services.footprint import FootprintInput, monthly_footprint
 from app.services.impact import action_impact
+from app.timeutil import today_ist
 
 # All 33 districts of Gujarat. lat/lon is an interior point of each district boundary
 # (geoBoundaries IND ADM2, 2021). The last value is the DISCOM suggested at onboarding:
@@ -124,10 +128,51 @@ def suggested_discom(district_name: str | None) -> str:
     return next((d for name, _, _, d in DISTRICTS if name == district_name), factors.DEFAULT_DISCOM)
 
 
+DEMO_HOUSEHOLD_EMAIL = "demo-household@example.com"
+DEMO_DISCOM_EMAIL = "demo-discom@example.com"
+DEMO_GEDA_EMAIL = "demo-geda@example.com"
+
+
+def ensure_demo_accounts(db: Session) -> list[str]:
+    """Create or refresh the three public demo logins and return their emails.
+
+    A household (a normal citizen, with rooftop solar, so Live energy has something to show), a DISCOM
+    auditor for UGVCL and a GEDA auditor. Both staff roles are read-only. The passwords are reset to
+    the configured one every time, so the published login keeps working.
+    """
+    settings = get_settings()
+    if not settings.demo_accounts:
+        return []
+    ahmedabad = db.scalar(select(District).where(District.name == "Ahmedabad")) or db.scalar(select(District).order_by(District.id))
+    pw = hash_password(settings.demo_password)
+    wanted = [
+        (DEMO_HOUSEHOLD_EMAIL, "Demo Household", Role.citizen, None),
+        (DEMO_DISCOM_EMAIL, "Demo DISCOM (read-only)", Role.discom_auditor, "ugvcl"),
+        (DEMO_GEDA_EMAIL, "Demo GEDA (read-only)", Role.auditor, None),
+    ]
+    for email, name, role, discom in wanted:
+        user = db.scalar(select(User).where(User.email == email))
+        if user is None:
+            user = User(email=email, name=name, password_hash=pw, role=role, district_id=ahmedabad.id if ahmedabad else None,
+                        ward="Ward 3" if role == Role.citizen else None)
+            db.add(user)
+            db.flush()
+        user.password_hash, user.role, user.discom = pw, role, discom
+        if role == Role.citizen and user.household is None:
+            footprint = monthly_footprint(FootprintInput(monthly_kwh=320, members=4, lpg_cylinders_per_month=1, commute_mode="car", commute_km_per_day=8))
+            db.add(Household(user_id=user.id, members=4, home_type="independent", monthly_kwh=320, lpg_cylinders_per_month=1, commute_mode="car",
+                             commute_km_per_day=8, ac_count=2, has_geyser=True, has_washing_machine=True, has_ev=False, has_solar=True,
+                             roof_area_sqm=35, discom="ugvcl", area="urban", baseline_kg_co2_month=footprint.total_kg))
+            db.add(EnergyReading(user_id=user.id, month=today_ist().replace(day=1), kwh=320, source="onboarding"))
+    db.commit()
+    return [e for e, *_ in wanted]
+
+
 def main() -> None:
     upgrade_to_head()
     with SessionLocal() as db:
         seed_reference(db)
+        ensure_demo_accounts(db)
 
 
 if __name__ == "__main__":

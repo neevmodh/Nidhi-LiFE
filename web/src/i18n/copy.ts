@@ -479,5 +479,10 @@ export const COPY = {
   "dc.l.status": "Status",
   "dc.l.feeder": "Feeder",
   "nav.discomLink": "DISCOM console",
+  "login.demoTitle": "Try the demo",
+  "login.demoNote": "Read-only accounts, open to everyone. Households use the app.",
+  "login.demoDiscom": "DISCOM console",
+  "login.demoGeda": "GEDA console",
+  "hero.demo": "Just looking? Open the app and sign in with {email}, password {password}. No sign-up needed.",
   "common.loading": "Loading…",
 } as const;

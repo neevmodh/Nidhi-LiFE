@@ -487,4 +487,6 @@ export const MOBILE_COPY = {
   "mobile.staffDiscomTitle": "DISCOM staff sign in on the web console",
   "mobile.staffDiscomBody": "The phone app is for households. Open the DISCOM console in a browser to see feeders, anomalies and outages.",
   "mobile.openDiscomConsole": "Open the DISCOM console",
+  "auth.demoTry": "Try the demo account",
+  "auth.demoHint": "No sign-up needed: {email}, password {password}.",
 } as const;

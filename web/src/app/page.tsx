@@ -10,6 +10,7 @@ import { Neighbourhood } from "@/components/Neighbourhood";
 import { GedaStrip, LanguageSwitcher, Logo, LogoMark } from "@/components/Shell";
 import { useI18n, type MessageKey } from "@/i18n";
 import { useAuth } from "@/lib/auth";
+import { DEMO } from "@/lib/demo";
 import { APK_URL, APP_URL } from "@/lib/links";
 
 const STEPS: { n: string; t: MessageKey; b: MessageKey }[] = [
@@ -88,6 +89,7 @@ export default function Landing() {
               </a>
               <a href="#start" className="inline-flex min-h-12 items-center rounded-full border border-border bg-surface px-6 text-base font-semibold hover:bg-surface-2">{t("hero.ctaCheck")}</a>
             </div>
+            <p className="mt-4 max-w-xl text-sm text-muted">{t("hero.demo", { email: DEMO.household, password: DEMO.password })}</p>
           </div>
           <div id="start" className="anim-rise scroll-mt-24 [animation-delay:.15s]"><BillCheck /></div>
         </div>

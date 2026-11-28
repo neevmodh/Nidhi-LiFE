@@ -28,6 +28,11 @@ class Settings(BaseSettings):
     # production prepares the database once before starting workers and sets this to false.
     auto_migrate: bool = True
     external_timeout_seconds: float = 6.0
+    # Public demo logins, so anyone can try the app and the consoles without signing up. The two staff
+    # accounts are read-only roles (a GEDA auditor, a DISCOM auditor): they cannot change anything. Turn
+    # them off with DEMO_ACCOUNTS=false. The password is published on purpose; it protects nothing.
+    demo_accounts: bool = True
+    demo_password: str = "NidhiDemo2036"
     # Optional AI bill scanning (Groq is used if both are set). Without either key,
     # the web app reads bills on-device instead.
     groq_api_key: str | None = None

@@ -21,6 +21,7 @@ services:
       UPLOAD_DIR: /data/uploads
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      DEMO_ACCOUNTS: ${DEMO_ACCOUNTS:-true}  # the public demo logins; CI sets false to check a fresh stack has no sample data
     volumes:
       - uploads:/data/uploads
     ports:

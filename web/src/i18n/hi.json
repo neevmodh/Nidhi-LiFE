@@ -1442,5 +1442,12 @@
   "mobile.staffDiscomTitle": "DISCOM स्टाफ़ वेब कंसोल पर साइन इन करता है",
   "mobile.staffDiscomBody": "फ़ोन ऐप घरों के लिए है। फ़ीडर, असामान्यताएँ और कटौती देखने के लिए ब्राउज़र में DISCOM कंसोल खोलें।",
   "mobile.openDiscomConsole": "DISCOM कंसोल खोलें",
-  "dc.kpi.sending": "ग्रिड को भेजा जा रहा"
+  "dc.kpi.sending": "ग्रिड को भेजा जा रहा",
+  "login.demoTitle": "डेमो आज़माएँ",
+  "login.demoNote": "सिर्फ़ देखने वाले खाते, सबके लिए खुले। घर ऐप का उपयोग करते हैं।",
+  "login.demoDiscom": "DISCOM कंसोल",
+  "login.demoGeda": "GEDA कंसोल",
+  "hero.demo": "बस देखना है? ऐप खोलें और {email} से साइन इन करें, पासवर्ड {password}। साइन-अप की ज़रूरत नहीं।",
+  "auth.demoTry": "डेमो खाता आज़माएँ",
+  "auth.demoHint": "साइन-अप की ज़रूरत नहीं: {email}, पासवर्ड {password}।"
 }

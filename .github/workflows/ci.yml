@@ -126,6 +126,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build and start the stack
         run: docker compose up -d --build --wait --wait-timeout 300
+        env:
+          DEMO_ACCOUNTS: "false"  # the smoke test checks a fresh stack holds no sample data
       - name: Create a GEDA admin
         run: docker compose exec -T -e LIFELINE_ADMIN_PASSWORD=ci-admin-pass api python -m app.create_admin --email officer@example.com --name "GEDA Officer"
       - name: Smoke test (real sign-up, no sample data)

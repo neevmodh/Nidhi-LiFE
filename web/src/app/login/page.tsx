@@ -7,6 +7,7 @@ import { ErrorNote, Field, inputClass } from "@/components/ui";
 import { useI18n } from "@/i18n";
 import { API_URL, api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { DEMO } from "@/lib/demo";
 import { APP_URL } from "@/lib/links";
 
 export default function LoginPage() {
@@ -74,6 +75,19 @@ export default function LoginPage() {
           </p>
         )}
       </form>
+      <section aria-labelledby="demo" className="mt-6 rounded-2xl bg-surface-2 p-4">
+        <h2 id="demo" className="text-sm font-bold">{t("login.demoTitle")}</h2>
+        <p className="mt-1 text-xs text-muted">{t("login.demoNote")}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {([["login.demoDiscom", DEMO.discom], ["login.demoGeda", DEMO.geda]] as const).map(([label, email]) => (
+            <button key={email} type="button" onClick={() => setF({ email, password: DEMO.password })}
+              className="rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold hover:bg-white">
+              {t(label)}
+            </button>
+          ))}
+        </div>
+        <p className="mt-3 break-all text-xs text-muted">{DEMO.discom} · {DEMO.geda} · <span className="font-mono">{DEMO.password}</span></p>
+      </section>
       <p className="mt-5 text-center text-sm text-muted">
         {t("login.new")} <a href={APP_URL} className="font-semibold text-brand">{t("login.create")}</a>
       </p>
