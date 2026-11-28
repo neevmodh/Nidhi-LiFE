@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { chartGeometry, flow, istClock, istHour, kw, kwh } from "./meter-view";
+import { chartGeometry, flow, istClock, istHour, istStamp, kw, kwh } from "./meter-view";
 
 describe("India time", () => {
   it("reads UTC timestamps as IST", () => {
@@ -57,5 +57,18 @@ describe("chartGeometry", () => {
       expect(band![1]).toBeGreaterThan(band![0]);
     }
     expect(g.hours.length).toBeGreaterThan(2);
+  });
+});
+
+describe("istStamp", () => {
+  const now = new Date("2026-11-28T06:30:00Z"); // 12:00 noon in India
+  it("shows only the time for today", () => {
+    expect(istStamp("2026-11-28T13:00:00Z", now)).toBe("6:30 PM");
+  });
+  it("adds the day for another day, in India time", () => {
+    expect(istStamp("2026-11-29T06:49:00Z", now)).toMatch(/^Sun,? 29 Nov,? 12:19 PM$/);
+    // 11 PM in India on the 28th is still the 28th; 1 AM on the 29th is the next day.
+    expect(istStamp("2026-11-28T17:30:00Z", now)).toBe("11:00 PM");
+    expect(istStamp("2026-11-28T19:30:00Z", now)).toMatch(/29 Nov, 1:00 AM$/);
   });
 });

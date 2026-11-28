@@ -1322,9 +1322,9 @@
   "dc.kpi.export": "આજે નિકાસ કરેલા યુનિટ",
   "dc.kpi.co2": "આજની આયાતથી CO₂",
   "dc.kpi.peak": "આજની ટોચની માંગ",
-  "dc.att.flags": "તપાસવા જેવી {n} અસામાન્યતા",
-  "dc.att.outages": "{n} વીજ કાપ નક્કી",
-  "dc.att.leads": "{n} સોલાર વિનંતી",
+  "dc.att.flags": "તપાસવા જેવી અસામાન્યતા",
+  "dc.att.outages": "નક્કી થયેલા વીજ કાપ",
+  "dc.att.leads": "રાહ જોતી સોલાર વિનંતીઓ",
   "dc.attention": "ધ્યાન માંગે છે",
   "dc.curve": "માંગ અને રૂફટોપ સોલાર, છેલ્લા 24 કલાક",
   "dc.f.feeder": "ફીડર",
@@ -1441,5 +1441,6 @@
   "home.liveBody": "તમારા ઘરનો વીજ વપરાશ હમણાં જુઓ",
   "mobile.staffDiscomTitle": "DISCOM સ્ટાફ વેબ કન્સોલ પર સાઇન ઇન કરે છે",
   "mobile.staffDiscomBody": "ફોન એપ ઘરો માટે છે. ફીડર, અસામાન્યતા અને વીજ કાપ જોવા બ્રાઉઝરમાં DISCOM કન્સોલ ખોલો.",
-  "mobile.openDiscomConsole": "DISCOM કન્સોલ ખોલો"
+  "mobile.openDiscomConsole": "DISCOM કન્સોલ ખોલો",
+  "dc.kpi.sending": "ગ્રિડને મોકલાય છે"
 }

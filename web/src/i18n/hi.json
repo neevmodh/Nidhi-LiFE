@@ -1322,9 +1322,9 @@
   "dc.kpi.export": "आज निर्यात की गई यूनिट",
   "dc.kpi.co2": "आज के आयात से CO₂",
   "dc.kpi.peak": "आज की शीर्ष माँग",
-  "dc.att.flags": "जाँचने लायक {n} असामान्यताएँ",
-  "dc.att.outages": "{n} बिजली कटौती तय",
-  "dc.att.leads": "{n} सौर अनुरोध",
+  "dc.att.flags": "जाँचने लायक असामान्यताएँ",
+  "dc.att.outages": "तय बिजली कटौती",
+  "dc.att.leads": "प्रतीक्षा में सौर अनुरोध",
   "dc.attention": "ध्यान चाहिए",
   "dc.curve": "माँग और रूफ़टॉप सौर, पिछले 24 घंटे",
   "dc.f.feeder": "फ़ीडर",
@@ -1441,5 +1441,6 @@
   "home.liveBody": "अपने घर की बिजली खपत अभी देखें",
   "mobile.staffDiscomTitle": "DISCOM स्टाफ़ वेब कंसोल पर साइन इन करता है",
   "mobile.staffDiscomBody": "फ़ोन ऐप घरों के लिए है। फ़ीडर, असामान्यताएँ और कटौती देखने के लिए ब्राउज़र में DISCOM कंसोल खोलें।",
-  "mobile.openDiscomConsole": "DISCOM कंसोल खोलें"
+  "mobile.openDiscomConsole": "DISCOM कंसोल खोलें",
+  "dc.kpi.sending": "ग्रिड को भेजा जा रहा"
 }

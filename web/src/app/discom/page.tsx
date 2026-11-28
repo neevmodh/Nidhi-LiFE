@@ -39,7 +39,7 @@ export default function DiscomOverview() {
         <Stat tone="brand" label={t("dc.kpi.meters")} value={fmt.int(o.meters)} />
         <Stat tone="sky" label={t("dc.kpi.load")} value={kw(o.load_kw)} hint={`${t("dc.kpi.peak")}: ${kw(o.peak_kw_today)}`} />
         <Stat tone="sun" label={t("dc.kpi.pv")} value={kw(o.pv_kw)} />
-        <Stat label={t("dc.kpi.grid")} value={kw(o.grid_kw)} />
+        <Stat label={t(o.grid_kw < 0 ? "dc.kpi.sending" : "dc.kpi.grid")} value={kw(Math.abs(o.grid_kw))} />
         <Stat label={t("dc.kpi.import")} value={kwh(o.import_today_kwh)} />
         <Stat label={t("dc.kpi.export")} value={kwh(o.export_today_kwh)} />
         <Stat label={t("dc.kpi.co2")} value={fmt.kg(o.co2_today_kg)} />

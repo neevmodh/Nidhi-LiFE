@@ -13,7 +13,7 @@ import { Rise, tap } from "@/components/motion";
 import { Button, ErrorText } from "@/components/ui";
 import { useI18n, type MessageKey } from "@/i18n";
 import { api, ApiError } from "@/lib/api";
-import { flow, istClock, kw, kwh } from "@/lib/meter-view";
+import { flow, istClock, istStamp, kw, kwh } from "@/lib/meter-view";
 import { fonts, shadow, space, type, useColors } from "@/theme";
 
 const APPLIANCES = ["washing_machine", "geyser", "ev_charger"] as const;
@@ -69,7 +69,7 @@ export default function Live() {
             {d.outages.map((o) => (
               <View key={o.id} style={[styles.badge, { backgroundColor: c.claySoft }]} accessibilityRole="alert">
                 <Ionicons name="flash-off-outline" size={16} color={c.clay} />
-                <Text style={[type.small, { color: c.clay, flex: 1 }]}>{t("live.outage", { reason: o.reason, from: istClock(o.starts_at), to: istClock(o.ends_at) })}</Text>
+                <Text style={[type.small, { color: c.clay, flex: 1 }]}>{t("live.outage", { reason: o.reason, from: istStamp(o.starts_at), to: istStamp(o.ends_at) })}</Text>
               </View>
             ))}
 

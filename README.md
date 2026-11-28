@@ -5,7 +5,7 @@
 # Nidhi
 
 ### Small choices. Real savings.
-**Gujarat's Mission LiFE companion: your electricity bill, turned into three easy moves a day, counted in rupees and kilograms of CO₂.**
+**Gujarat's Mission LiFE companion: your electricity bill, and now your live smart meter, turned into a few easy moves a day, counted in rupees and kilograms of CO₂, and proved by the meter.**
 
 [![CI](https://github.com/neevmodh/Nidhi-LiFE/actions/workflows/ci.yml/badge.svg)](https://github.com/neevmodh/Nidhi-LiFE/actions/workflows/ci.yml)
 [![Website](https://img.shields.io/badge/website-nidhi--gujarat.vercel.app-4E7D5E)](https://nidhi-gujarat.vercel.app)
@@ -15,7 +15,7 @@
 **Mission LiFE** · Green Energy & Sustainability<br/>
 Built for the **Gujarat Energy Development Agency (GEDA)** by team **Beyond Logic**
 
-**[▶ Demo video (1:30)](https://drive.google.com/file/d/1tO_5nZ16OITjVTpDeNKqhzACYESNHPkz/view)** · **[Website](https://nidhi-gujarat.vercel.app)** · **[Open the app](https://nidhi-app-rosy.vercel.app)** · **[Android app (APK)](https://nidhi-gujarat.vercel.app/get)** · [GEDA console](https://nidhi-gujarat.vercel.app/geda) · [API docs](https://lifeline-api-9ox2.onrender.com/docs) · [How we calculate](https://nidhi-gujarat.vercel.app/methodology) · [Design canvas](https://claude.ai/artifact/VdiyAQ5vFcb4wivcsi4vCX)
+**[▶ Demo video (1:30)](https://drive.google.com/file/d/1tO_5nZ16OITjVTpDeNKqhzACYESNHPkz/view)** · **[Website](https://nidhi-gujarat.vercel.app)** · **[Open the app](https://nidhi-app-rosy.vercel.app)** · **[Android app (APK)](https://nidhi-gujarat.vercel.app/get)** · [GEDA console](https://nidhi-gujarat.vercel.app/geda) · [DISCOM console](https://nidhi-gujarat.vercel.app/discom) · [API docs](https://lifeline-api-9ox2.onrender.com/docs) · [How we calculate](https://nidhi-gujarat.vercel.app/methodology) · [Design canvas](https://claude.ai/artifact/VdiyAQ5vFcb4wivcsi4vCX)
 
 </div>
 
@@ -23,16 +23,17 @@ Built for the **Gujarat Energy Development Agency (GEDA)** by team **Beyond Logi
 
 ## At a glance
 
-Nidhi is a **personal sustainability companion for Gujarat's households** and a **command console for GEDA**, on one API. A household photographs its electricity bill and gets its footprint, a plan in rupees, three easy moves a day and an honest record of what it saved. GEDA sees participation, Mission LiFE themes and savings across all 33 districts, and runs campaigns that reach every home.
+Nidhi is a **personal sustainability companion for Gujarat's households**, a **command console for GEDA** and a **console for the distribution companies (DISCOMs)**, on one API. A household photographs its electricity bill, or links a smart meter, and gets its footprint, a plan in rupees, a few easy moves a day and an honest record of what it saved. An energy agent reads the meter and ranks what to do next, and the meter itself can confirm a move, with no photo. GEDA sees participation, Mission LiFE themes and savings across all 33 districts. A DISCOM sees demand by feeder, anomalies and outages for its own area.
 
 | 📸 **Two-minute start** | 🧾 **Bill X-ray** | 💬 **Ask Nidhi** | 🗺️ **Every district, live** |
 |---|---|---|---|
 | A bill photo fills in the units and the DISCOM; the footprint and a savings plan follow. | The bill split exactly as the DISCOM charges it, then *What if*: tap AC, LEDs or solar and watch ₹ and CO₂ change. | Questions in English, ગુજરાતી or हिन्दी, answered from the home's own numbers. An AI can't slip in a number. | 33 districts racing to their monthly goal in the app; GEDA's console with the funnel, themes, reviews and festival campaigns. |
 
 - **Covers the whole problem statement:** footprint and improvement over time, contextual nudges and daily challenges, gamification and social impact, and a resource hub for rooftop solar. [See how each is met](#how-it-meets-the-problem-statement).
+- **Measure, act, prove:** a live meter (simulated and labelled, or a real one posting signed readings), an energy agent whose numbers all come from code, and meter-confirmed actions. [Read how](#live-meter-measure-act-prove).
 - **Honest by design:** estimates, self-reports and GEDA-verified impact are never added together, and actions with no defensible CO₂ figure earn points without claiming any.
 - **For everyone in Gujarat:** Android, iPhone and the web from one codebase, in three languages, with a desktop layout in a wide browser.
-- **Built to last:** 367 backend tests on SQLite and PostgreSQL, 97 app and website unit tests, 6 end-to-end flows and a Docker smoke test run on every pull request; more than 50 pull requests, each merged on green CI.
+- **Built to last:** 445 backend tests on SQLite and PostgreSQL, 103 app and website unit tests, 12 end-to-end flows and a Docker smoke test run on every pull request; every pull request merged on green CI.
 
 ## Built with
 
@@ -118,7 +119,7 @@ Nidhi is a **personal sustainability companion for Gujarat's households** and a 
 
 ## Contents
 
-[At a glance](#at-a-glance) · [The app](#the-app) · [Website and console](#website-and-console) · [Why Nidhi](#why-nidhi) · [What it does](#what-it-does) · [The game](#the-game-honest-by-design) · [Design](#design) · [How it meets the problem statement](#how-it-meets-the-problem-statement) · [Architecture](#architecture) · [Database](#database-schema) · [Honest numbers](#honest-numbers) · [Try it](#try-it) · [Run it locally](#run-it-locally) · [Deploying](#deploying) · [Tests](#tests) · [API](#api-overview) · [Project structure](#project-structure) · [Security and privacy](#security-and-privacy) · [Roadmap](#limitations-and-roadmap)
+[At a glance](#at-a-glance) · [The app](#the-app) · [Live meter](#live-meter-and-discom-console) · [Website and console](#website-and-console) · [Why Nidhi](#why-nidhi) · [What it does](#what-it-does) · [The game](#the-game-honest-by-design) · [Design](#design) · [How it meets the problem statement](#how-it-meets-the-problem-statement) · [Architecture](#architecture) · [Database](#database-schema) · [Honest numbers](#honest-numbers) · [Try it](#try-it) · [Run it locally](#run-it-locally) · [Deploying](#deploying) · [Tests](#tests) · [API](#api-overview) · [Project structure](#project-structure) · [Security and privacy](#security-and-privacy) · [Roadmap](#limitations-and-roadmap)
 
 ## The app
 
@@ -155,6 +156,28 @@ The app's web version adapts to the screen: full screen on a 320 px phone, a cen
 <td align="center"><img src="docs/screenshots/console-map.png" width="280" alt="Console Map: Gujarat's districts shaded by rooftop sunshine, citizens or CO₂ avoided" /><br/><b>Map</b></td>
 <td align="center"><img src="docs/screenshots/console-districts.png" width="280" alt="Console Districts: every district side by side, sortable, with CSV export" /><br/><b>Districts</b></td>
 <td align="center"><img src="docs/screenshots/console-communities.png" width="280" alt="Console Communities: communities by kind, the top ten this month and every open duel" /><br/><b>Communities</b></td>
+</tr>
+</table>
+</div>
+
+## Live meter and DISCOM console
+
+<div align="center">
+<table>
+<tr>
+<td align="center"><img src="docs/screenshots/app-live.png" width="200" alt="Live energy: power in use, from the panels and to the grid, with a planned power cut" /><br/><b>Live energy</b></td>
+<td align="center"><img src="docs/screenshots/app-agent.png" width="200" alt="Energy agent: a ranked plan with a meter-confirmed action" /><br/><b>Energy agent</b></td>
+<td align="center"><img src="docs/screenshots/app-meter-bill.png" width="200" alt="Bill from your meter: projection, slab split and net-metering credit" /><br/><b>Bill from your meter</b></td>
+<td align="center"><img src="docs/screenshots/app-society-energy.png" width="200" alt="Society energy: the society's meters added together" /><br/><b>Society energy</b></td>
+</tr>
+</table>
+<img src="docs/screenshots/console-discom-overview.png" width="860" alt="DISCOM console overview: meters, demand, rooftop solar, units today and what needs attention" />
+<br/><br/>
+<table>
+<tr>
+<td align="center"><img src="docs/screenshots/console-discom-feeders.png" width="280" alt="DISCOM feeders: load against rating" /><br/><b>Feeders</b></td>
+<td align="center"><img src="docs/screenshots/console-discom-anomalies.png" width="280" alt="DISCOM anomalies, by meter number only" /><br/><b>Anomalies</b></td>
+<td align="center"><img src="docs/screenshots/console-discom-outages.png" width="280" alt="DISCOM outages: plan a cut and notify the households" /><br/><b>Outages</b></td>
 </tr>
 </table>
 </div>
