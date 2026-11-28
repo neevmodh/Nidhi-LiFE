@@ -84,8 +84,8 @@ test("an engineer plans an outage and the household sees it; an auditor can only
   const notes = await (await request.get(`${API}/api/notifications`, { headers: home.auth })).json();
   expect(notes.unread).toBeGreaterThan(0);
 
-  // Cancel it again.
-  await page.getByRole("button", { name: "Cancel outage" }).first().click();
+  // Cancel it again (its own row: the demo data has outages of its own on other feeders).
+  await page.getByRole("listitem").filter({ hasText: "Transformer maintenance e2e" }).getByRole("button", { name: "Cancel outage" }).click();
   await expect(page.getByText("Transformer maintenance e2e")).toHaveCount(0);
 
   // An auditor sees the page but not the form.

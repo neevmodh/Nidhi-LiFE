@@ -1,11 +1,14 @@
 """Reference data: Gujarat's districts and the green action catalogue.
 
-Upserted on every start. There is no sample or synthetic data: every citizen,
-reading and action in the database comes from a real person using the app.
+Upserted on every start. The only made-up data is the clearly labelled demo set (the three public demo
+logins and the simulated UGVCL homes behind the demo DISCOM console), and it can be switched off with
+DEMO_ACCOUNTS=false; everything else comes from a real person using the app.
 Create the first GEDA administrator with `python -m app.create_admin`.
 """
 
+import secrets
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -14,9 +17,20 @@ from app.config import get_settings
 from app.db import SessionLocal
 from app.i18n import tr
 from app.migrate import upgrade_to_head
-from app.models import ActionType, District, EnergyReading, Household, Role, User
+from app.models import (
+    ActionType,
+    District,
+    EnergyReading,
+    Household,
+    MeterFlag,
+    Outage,
+    Role,
+    SolarLead,
+    User,
+)
 from app.security import hash_password
 from app.services import factors
+from app.services import meter as meters
 from app.services.footprint import FootprintInput, monthly_footprint
 from app.services.impact import action_impact
 from app.timeutil import today_ist
@@ -168,11 +182,101 @@ def ensure_demo_accounts(db: Session) -> list[str]:
     return [e for e, *_ in wanted]
 
 
+# The demo DISCOM console needs a company to look at. These are simulated homes, labelled as such
+# everywhere: emails on example.com, names "Demo home NN", meters marked simulated, and nobody can sign in
+# as them (their password is random and never stored). They exist only while demo accounts are on.
+DEMO_FLEET_DISCOM = "ugvcl"
+DEMO_FLEET_SIZE = 24
+DEMO_FLEET_EMAIL = "demo-home-{:02d}@example.com"
+_FLEET_DISTRICTS = ["Mehsana", "Patan", "Sabarkantha"]
+_FLAGS = [
+    ("night_spike", "Load of 3.1 kW between 01:00 and 04:00 on three nights; this home normally sits under 0.4 kW", "open"),
+    ("bill_mismatch", "Last bill says 410 units; the meter registered 286 units over the same period", "open"),
+    ("register_rollback", "Import register read 1843.2 kWh, then 1839.7 kWh fifteen minutes later", "open"),
+    ("night_spike", "Steady 2.4 kW overnight for a week, after months under 0.5 kW", "open"),
+    ("bill_mismatch", "Bill of 120 units against 238 units on the meter: possible bypass or misread", "open"),
+    ("register_rollback", "Register stepped back 2.1 kWh after a power cut; meter clock reset", "resolved"),
+    ("bill_mismatch", "Bill and meter differed by 64 units; the reading date was wrong and the bill was revised", "resolved"),
+]
+_LEADS = [(3.0, "new"), (4.0, "contacted"), (2.0, "survey_done"), (5.0, "quoted"), (3.0, "installed"), (2.5, "new")]
+
+
+def ensure_demo_fleet(db: Session) -> int:
+    """Create (once) simulated UGVCL homes with meters, a few anomalies, solar leads and upcoming outages.
+    Returns how many demo homes there are. Safe to run on every start."""
+    if not get_settings().demo_accounts:
+        return 0
+    districts = {d.name: d for d in db.scalars(select(District).where(District.name.in_(_FLEET_DISTRICTS)))}
+    homes: list[User] = []
+    for i in range(1, DEMO_FLEET_SIZE + 1):
+        email = DEMO_FLEET_EMAIL.format(i)
+        user = db.scalar(select(User).where(User.email == email))
+        if user is None:
+            district = districts.get(_FLEET_DISTRICTS[i % len(_FLEET_DISTRICTS)])
+            members, ac = 2 + i % 4, i % 3
+            kwh = 140 + (i * 37) % 260 + 60 * ac
+            solar = i % 3 == 0
+            user = User(email=email, name=f"Demo home {i:02d}", password_hash=hash_password(secrets.token_urlsafe(24)),
+                        role=Role.citizen, district_id=district.id if district else None, ward=f"Ward {1 + (i // 3) % 3}")
+            db.add(user)
+            db.flush()
+            footprint = monthly_footprint(FootprintInput(monthly_kwh=kwh, members=members, lpg_cylinders_per_month=1,
+                                                         commute_mode="two_wheeler", commute_km_per_day=8))
+            db.add(Household(user_id=user.id, members=members, home_type="independent" if i % 2 else "apartment",
+                             monthly_kwh=kwh, lpg_cylinders_per_month=1, commute_mode="two_wheeler", commute_km_per_day=8,
+                             ac_count=ac, has_geyser=i % 2 == 0, has_washing_machine=True, has_ev=i % 8 == 0,
+                             has_solar=solar, roof_area_sqm=30 if solar else 0, discom=DEMO_FLEET_DISCOM,
+                             area="rural" if i % 4 == 0 else "urban", baseline_kg_co2_month=footprint.total_kg))
+            db.commit()
+            db.refresh(user)
+        homes.append(user)
+    fleet = []
+    for user in homes:
+        meter = meters.ensure_meter(db, user)
+        if meter is not None:
+            meters.catch_up(db, meter, user)
+            fleet.append((meter, user))
+
+    meter_ids = [m.id for m, _ in fleet]
+    now = datetime.now(UTC)
+    if fleet and not db.scalar(select(MeterFlag.id).where(MeterFlag.meter_id.in_(meter_ids)).limit(1)):
+        for n, (kind, detail, state) in enumerate(_FLAGS):
+            meter = fleet[(n * 5 + 2) % len(fleet)][0]
+            db.add(MeterFlag(meter_id=meter.id, kind=kind, detail=detail, status=state,
+                             created_at=now - timedelta(hours=3 + 9 * n),
+                             resolved_at=now - timedelta(hours=2 + 9 * n) if state == "resolved" else None))
+    user_ids = [u.id for _, u in fleet]
+    if fleet and not db.scalar(select(SolarLead.id).where(SolarLead.user_id.in_(user_ids)).limit(1)):
+        for n, (kwp, state) in enumerate(_LEADS):
+            user = fleet[(n * 4 + 1) % len(fleet)][1]
+            h = user.household
+            db.add(SolarLead(user_id=user.id, district_id=user.district_id, kwp=kwp, roof_area_sqm=kwp * factors.SQM_PER_KWP,
+                             monthly_kwh=h.monthly_kwh, note="Demo request", status=state,
+                             created_at=now - timedelta(days=1 + 2 * n)))
+    # Outages are only listed until they end, so keep two upcoming ones on demo feeders.
+    feeders = sorted({m.feeder for m, _ in fleet})
+    upcoming = db.scalar(select(Outage.id).where(Outage.discom == DEMO_FLEET_DISCOM, Outage.ends_at > now,
+                                                 Outage.feeder.in_(feeders)).limit(1))
+    if feeders and upcoming is None:
+        today = now.replace(minute=0, second=0, microsecond=0)
+        for days, hour_utc, hours, reason, feeder in [
+            (1, 4, 3, "Planned maintenance: replacing a 100 kVA distribution transformer", feeders[0]),
+            (3, 5, 2, "Tree trimming along the 11 kV line before the winter fog season", feeders[len(feeders) // 2]),
+            (6, 3, 4, "Feeder bifurcation work to relieve evening overload", feeders[-1]),
+        ]:
+            start = today.replace(hour=hour_utc) + timedelta(days=days)
+            db.add(Outage(discom=DEMO_FLEET_DISCOM, feeder=feeder, reason=reason, starts_at=start,
+                          ends_at=start + timedelta(hours=hours)))
+    db.commit()
+    return len(fleet)
+
+
 def main() -> None:
     upgrade_to_head()
     with SessionLocal() as db:
         seed_reference(db)
         ensure_demo_accounts(db)
+        ensure_demo_fleet(db)
 
 
 if __name__ == "__main__":
