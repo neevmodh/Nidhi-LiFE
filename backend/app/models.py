@@ -29,6 +29,9 @@ class Role(str, enum.Enum):
     officer = "officer"  # GEDA district officer: their own district (users.district_id)
     reviewer = "reviewer"  # GEDA proof reviewer: the review queue only (their district if one is set)
     auditor = "auditor"  # GEDA read-only analyst: every dashboard, can't approve or change anything
+    discom_admin = "discom_admin"  # DISCOM: every feeder of their distribution company (users.discom)
+    discom_engineer = "discom_engineer"  # DISCOM field engineer: can raise outages and resolve anomalies
+    discom_auditor = "discom_auditor"  # DISCOM read-only analyst
 
 
 class ActionStatus(str, enum.Enum):
@@ -59,6 +62,8 @@ class User(Base):
     role: Mapped[Role] = mapped_column(Enum(Role), default=Role.citizen)
     district_id: Mapped[int | None] = mapped_column(ForeignKey("districts.id"), index=True)
     ward: Mapped[str | None] = mapped_column(String(80))
+    # Distribution company a DISCOM staff account belongs to (factors.DISCOMS key); None for everyone else.
+    discom: Mapped[str | None] = mapped_column(String(20))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     district: Mapped[District | None] = relationship()
@@ -319,6 +324,86 @@ class SolarLead(Base):
     staff_note: Mapped[str] = mapped_column(String(300), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class Meter(Base):
+    """A household's smart meter. `source` says where its readings come from: a simulated meter that
+    the API advances itself, or a real device posting HMAC-signed readings (services/meter_ingest.py)."""
+
+    __tablename__ = "meters"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
+    serial: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    source: Mapped[str] = mapped_column(String(12), default="simulated")  # simulated | device
+    discom: Mapped[str] = mapped_column(String(20), index=True)
+    feeder: Mapped[str] = mapped_column(String(40), index=True)  # the 11 kV feeder the house hangs off
+    district_id: Mapped[int | None] = mapped_column(ForeignKey("districts.id"), index=True)
+    sanctioned_load_kw: Mapped[float] = mapped_column(Float, default=4.0)
+    pv_kwp: Mapped[float] = mapped_column(Float, default=0)
+    secret: Mapped[str] = mapped_column(String(64))  # HMAC key for signed readings
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    user: Mapped[User] = relationship()
+
+
+class MeterReading(Base):
+    """One 15-minute interval: cumulative import and export registers (like a real meter's) plus the
+    average load and PV power over the interval. Registers only ever go up."""
+
+    __tablename__ = "meter_readings"
+    __table_args__ = (UniqueConstraint("meter_id", "ts"), Index("ix_meter_readings_meter_ts", "meter_id", "ts"))
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    meter_id: Mapped[int] = mapped_column(ForeignKey("meters.id"))
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # interval end, UTC
+    import_kwh: Mapped[float] = mapped_column(Float)  # cumulative register
+    export_kwh: Mapped[float] = mapped_column(Float, default=0)  # cumulative register
+    load_kw: Mapped[float] = mapped_column(Float, default=0)
+    pv_kw: Mapped[float] = mapped_column(Float, default=0)
+
+
+class MeterEvent(Base):
+    """A load a simulated meter is told to have drawn (the household ran an appliance), so a demo meter reacts
+    to what the person does. Real meters have no events: they just report what happened."""
+
+    __tablename__ = "meter_events"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    meter_id: Mapped[int] = mapped_column(ForeignKey("meters.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(20))
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    delta_kw: Mapped[float] = mapped_column(Float)
+
+
+class MeterFlag(Base):
+    """An anomaly raised on a meter: a register that went backwards, or a bill that disagrees with the meter."""
+
+    __tablename__ = "meter_flags"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    meter_id: Mapped[int] = mapped_column(ForeignKey("meters.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(24))  # register_rollback | bill_mismatch | night_spike
+    detail: Mapped[str] = mapped_column(String(300), default="")
+    status: Mapped[str] = mapped_column(String(12), default="open", index=True)  # open | resolved
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Outage(Base):
+    """A planned or unplanned outage a DISCOM publishes for a feeder; households on it are notified."""
+
+    __tablename__ = "outages"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    discom: Mapped[str] = mapped_column(String(20), index=True)
+    feeder: Mapped[str] = mapped_column(String(40), index=True)
+    reason: Mapped[str] = mapped_column(String(200))
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 class TranslationCache(Base):

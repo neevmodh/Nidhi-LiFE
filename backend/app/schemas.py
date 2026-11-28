@@ -108,6 +108,7 @@ class UserOut(ORM):
     role: str
     district_id: int | None
     ward: str | None
+    discom: str | None = None  # distribution company of a DISCOM staff account
     onboarded: bool = False
     society_id: int | None = None
     society_role: str | None = None  # member | committee
