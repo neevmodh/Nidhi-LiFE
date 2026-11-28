@@ -52,8 +52,17 @@ def _fleet(db, discom: str) -> list[tuple[Meter, User]]:
     rows = db.execute(
         select(Meter, User).join(User, User.id == Meter.user_id).where(Meter.discom == discom).limit(MAX_METERS)
     ).all()
+    # One query for every meter's latest reading, so meters already up to date cost nothing more.
+    simulated = [m.id for m, _ in rows if m.source == "simulated"]
+    latest = dict(db.execute(
+        select(MeterReading.meter_id, func.max(MeterReading.ts)).where(MeterReading.meter_id.in_(simulated))
+        .group_by(MeterReading.meter_id)
+    ).all()) if simulated else {}
+    due = meter_sim.floor_interval(datetime.now(UTC))
     for meter, user in rows:
-        svc.catch_up(db, meter, user)
+        last = latest.get(meter.id)
+        if meter.source == "simulated" and (last is None or as_utc(last) < due):
+            svc.catch_up(db, meter, user)
     return [(m, u) for m, u in rows]
 
 
