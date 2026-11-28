@@ -118,7 +118,7 @@ def analyze(db: Session, user: User, meter: Meter, now: datetime, locale: str = 
     month = meter_svc.month_summary(db, meter, h)
     rate = marginal_rs(h, month["projected_import_kwh"])
     steps.append(Step("price_tariff", "agent.step.price_tariff",
-                      {"kwh": month["projected_import_kwh"], "rate": rate, "bill": month["projected_bill_rs"]}))
+                      {"kwh": month["projected_import_kwh"], "rate": rate, "bill": round(month["projected_bill_rs"])}))
 
     stated = meter_svc.billed_kwh(db, user)
     diff_pct = round(100 * (month["projected_load_kwh"] - stated) / stated) if stated else 0
@@ -161,7 +161,7 @@ def analyze(db: Session, user: User, meter: Meter, now: datetime, locale: str = 
         "load_kw": round(now_load, 2),
         "pv_kw": round(now_pv, 2),
         "projected_kwh": month["projected_import_kwh"],
-        "projected_bill_rs": month["projected_bill_rs"],
+        "projected_bill_rs": round(month["projected_bill_rs"]),
         "rate_rs": rate,
         "peak_share_pct": week["peak_share_pct"],
         "surplus_kwh_day": week["surplus_kwh_day"],

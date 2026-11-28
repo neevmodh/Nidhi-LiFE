@@ -11,7 +11,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field, model_validator
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.deps import DbSession, DiscomEngineer, DiscomUser, discom_scope
 from app.models import (
@@ -70,6 +70,22 @@ def _window(db, meters: list[Meter], start: datetime, end: datetime) -> dict[int
     return by_meter
 
 
+def _by_feeder(db, code: str, start: datetime, end: datetime) -> dict[str, dict[datetime, tuple[float, float]]]:
+    """Per feeder, per 15-minute interval: (summed load kW, summed PV kW). Summed in the database, so a week
+    of a whole company's readings never has to be loaded as objects."""
+    rows = db.execute(
+        select(Meter.feeder, MeterReading.ts, func.sum(MeterReading.load_kw), func.sum(MeterReading.pv_kw))
+        .join(Meter, Meter.id == MeterReading.meter_id)
+        .where(Meter.discom == code, MeterReading.ts > start, MeterReading.ts <= end)
+        .group_by(Meter.feeder, MeterReading.ts)
+        .order_by(MeterReading.ts)
+    ).all()
+    out: dict[str, dict[datetime, tuple[float, float]]] = defaultdict(dict)
+    for feeder, ts, load, pv in rows:
+        out[feeder][as_utc(ts)] = (float(load), float(pv))
+    return out
+
+
 def _aggregate(by_meter: dict[int, list[MeterReading]]) -> dict[datetime, tuple[float, float]]:
     """Per 15-minute interval: (summed load kW, summed PV kW) across meters."""
     total: dict[datetime, list[float]] = defaultdict(lambda: [0.0, 0.0])
@@ -109,10 +125,9 @@ def overview(user: DiscomUser, db: DbSession, discom: DiscomQuery = None):
     series = _aggregate(by_meter)
     latest = list(series.values())[-1] if series else (0.0, 0.0)
     # Per-home netting is what the meters register, so units come from the registers, not the aggregate curve.
-    imp_reg = exp_reg = 0.0
-    for meter in meters:
-        i, e = svc.usage_between(db, meter, start, min(now, end))
-        imp_reg, exp_reg = imp_reg + i, exp_reg + e
+    totals = svc.usage_many(db, meters, start, min(now, end)).values()
+    imp_reg = sum(i for i, _ in totals)
+    exp_reg = sum(e for _, e in totals)
     open_flags = len(db.scalars(select(MeterFlag.id).join(Meter, Meter.id == MeterFlag.meter_id)
                                 .where(Meter.discom == code, MeterFlag.status == "open")).all())
     outages = len(db.scalars(select(Outage.id).where(Outage.discom == code, Outage.ends_at > now)).all())
@@ -168,9 +183,11 @@ def feeders(user: DiscomUser, db: DbSession, discom: DiscomQuery = None):
         by_feeder[meter.feeder].append(meter)
     now = datetime.now(UTC)
     day_start, day_end = ist_day_bounds_utc(today_ist())
+    week_by_feeder = _by_feeder(db, code, now - timedelta(days=7), now)
+    day_use = svc.usage_many(db, [m for m, _ in fleet], day_start, min(now, day_end))
     out = []
     for feeder, meters in sorted(by_feeder.items()):
-        week = _aggregate(_window(db, meters, now - timedelta(days=7), now))
+        week = week_by_feeder.get(feeder, {})
         loads = sorted(load for load, _ in week.values())
         latest = list(week.values())[-1] if week else (0.0, 0.0)
         peak = loads[-1] if loads else 0.0
@@ -178,7 +195,7 @@ def feeders(user: DiscomUser, db: DbSession, discom: DiscomQuery = None):
         peak_ts = max(week, key=lambda t: week[t][0]) if week else None
         rated = round(sum(m.sanctioned_load_kw for m in meters) * FEEDER_DIVERSITY, 1)
         util = round(100 * latest[0] / rated) if rated else 0
-        imp = sum(svc.usage_between(db, m, day_start, min(now, day_end))[0] for m in meters)
+        imp = sum(day_use[m.id][0] for m in meters)
         out.append(FeederOut(
             feeder=feeder, meters=len(meters), rated_kw=rated, load_kw=round(latest[0], 2), pv_kw=round(latest[1], 2),
             utilisation_pct=util, hot=util >= HOT_UTILISATION_PCT, peak_kw_week=round(peak, 2),

@@ -20,6 +20,10 @@ from app.models import (
     Duel,
     EnergyReading,
     Household,
+    Meter,
+    MeterEvent,
+    MeterFlag,
+    MeterReading,
     Notification,
     PushSubscription,
     Role,
@@ -38,6 +42,26 @@ log = logging.getLogger(__name__)
 
 class DeleteIn(BaseModel):
     password: str
+
+
+def _meter_export(db, user) -> dict | None:
+    """The household's meter and every reading stored for it (each reading is [time, import kWh, export kWh,
+    load kW, solar kW]), plus anything flagged on it."""
+    meter = db.scalar(select(Meter).where(Meter.user_id == user.id))
+    if meter is None:
+        return None
+    rows = db.scalars(select(MeterReading).where(MeterReading.meter_id == meter.id).order_by(MeterReading.ts)).all()
+    flags = db.scalars(select(MeterFlag).where(MeterFlag.meter_id == meter.id).order_by(MeterFlag.id)).all()
+    return {
+        "serial": meter.serial,
+        "source": meter.source,
+        "simulated": meter.source == "simulated",
+        "feeder": meter.feeder,
+        "solar_kwp": meter.pv_kwp,
+        "reading_columns": ["time", "import_kwh", "export_kwh", "load_kw", "solar_kw"],
+        "readings": [[r.ts.isoformat(), r.import_kwh, r.export_kwh, r.load_kw, r.pv_kw] for r in rows],
+        "flags": [{"kind": f.kind, "detail": f.detail, "status": f.status, "raised": f.created_at.isoformat()} for f in flags],
+    }
 
 
 @router.get("/export")
@@ -90,6 +114,7 @@ def export_data(user: CurrentUser, db: DbSession):
             for lead in db.scalars(select(SolarLead).where(SolarLead.user_id == user.id)).all()
         ],
         "alerts_enabled_on_a_device": devices is not None,
+        "smart_meter": _meter_export(db, user),
     }
     body = json.dumps(data, ensure_ascii=False, indent=2)
     filename = f"nidhi-my-data-{datetime.now(timezone.utc):%Y%m%d}.json"
@@ -125,6 +150,11 @@ async def delete_account(body: DeleteIn, user: CurrentUser, db: DbSession, reque
     # Duels and campaigns this person started carry on for everyone else; they just lose the author.
     for model in (Duel, Campaign):
         db.execute(update(model).where(model.created_by == user.id).values(created_by=None))
+    # The smart meter goes with the account: its readings, simulated events and flags first (they point at it).
+    meter_ids = select(Meter.id).where(Meter.user_id == user.id)
+    for model in (MeterReading, MeterEvent, MeterFlag):
+        db.execute(delete(model).where(model.meter_id.in_(meter_ids)))
+    db.execute(delete(Meter).where(Meter.user_id == user.id))
     for model in (Notification, PushSubscription, SolarLead, ActionLog, EnergyReading, Household):
         db.execute(delete(model).where(model.user_id == user.id))
     db.execute(delete(User).where(User.id == user.id))

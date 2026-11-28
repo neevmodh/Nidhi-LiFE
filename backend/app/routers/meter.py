@@ -357,7 +357,7 @@ def confirm(body: ConfirmIn, user: CurrentUser, db: DbSession, locale: RequestLo
 
 class ReadingIn(BaseModel):
     serial: str = Field(max_length=32)
-    ts: datetime
+    ts: str = Field(max_length=40)  # signed exactly as sent, so it stays text until the signature is checked
     import_kwh: float = Field(ge=0)
     export_kwh: float = Field(ge=0)
     load_kw: float = Field(ge=0, le=100)
@@ -379,18 +379,23 @@ def link_device(user: CurrentUser, db: DbSession):
     meter.source = "device"
     db.commit()
     return {"serial": meter.serial, "secret": meter.secret,
-            "signed_fields": list(meter_ingest.SIGNED_FIELDS), "endpoint": "/api/meter/readings"}
+            "signed_fields": list(meter_ingest.SIGNED_FIELDS), "endpoint": "/api/meter/readings",
+            "signature": "HMAC-SHA256 hex over serial|ts|import_kwh|export_kwh|load_kw|pv_kw, ts as sent, "
+                         "registers with 3 decimals and powers with 4"}
 
 
 @router.post("/readings", status_code=status.HTTP_201_CREATED)
 def ingest(body: ReadingIn, db: DbSession):
     """A device's signed reading. Authenticated by its HMAC signature, not by a user login."""
     meter = db.scalar(select(Meter).where(Meter.serial == body.serial))
-    reading = body.model_dump(mode="json", exclude={"signature"})
-    reading["ts"] = body.ts.isoformat()
+    reading = body.model_dump(exclude={"signature"})
     if meter is None or meter.source != "device" or not meter_ingest.verify(reading, body.signature, meter.secret):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Bad serial or signature")
-    ts = as_utc(body.ts)
+    try:
+        ts = datetime.fromisoformat(body.ts)
+    except ValueError:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "ts must be an ISO 8601 time") from None
+    ts = as_utc(ts if ts.tzinfo else ts.replace(tzinfo=UTC))
     now = datetime.now(UTC)
     if meter_ingest.from_the_future(ts, now):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Reading is from the future")

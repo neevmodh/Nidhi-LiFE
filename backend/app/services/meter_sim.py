@@ -16,6 +16,7 @@ import math
 import random
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from functools import lru_cache
 
 INTERVAL_MIN = 15
 INTERVAL = timedelta(minutes=INTERVAL_MIN)
@@ -39,6 +40,13 @@ def _rng(*parts: object) -> random.Random:
     return random.Random(int.from_bytes(digest[:8], "big"))
 
 
+@lru_cache(maxsize=20000)
+def _unit(*parts: object) -> float:
+    """A repeatable number in [0, 1) for these parts. Cached: the same day's weather or a home's profile is asked for
+    thousands of times while a meter catches up."""
+    return _rng(*parts).random()
+
+
 def floor_interval(ts: datetime) -> datetime:
     ts = ts.astimezone(UTC).replace(second=0, microsecond=0)
     return ts - timedelta(minutes=ts.minute % INTERVAL_MIN)
@@ -53,7 +61,7 @@ def ambient_temp_c(ts: datetime, serial: str = "") -> float:
     seasonal = 27.5 + 7.5 * math.sin(2 * math.pi * (doy - 50) / 365)
     hour = local.hour + local.minute / 60
     diurnal = 6.0 * math.sin(2 * math.pi * (hour - 9) / 24)
-    day_shift = (_rng("t", serial[:6], local.date().isoformat()).random() - 0.5) * 3
+    day_shift = (_unit("t", serial[:6], local.date().isoformat()) - 0.5) * 3
     return seasonal + diurnal + day_shift
 
 
@@ -61,7 +69,7 @@ def cloud_cover(ts: datetime, serial: str = "") -> float:
     """0 clear to 1 overcast: monsoon months are cloudy, the rest mostly clear."""
     local = ts + timedelta(hours=IST_OFFSET_H)
     base = 0.62 if 6 <= local.month <= 9 else 0.12
-    day = _rng("c", serial[:6], local.date().isoformat()).random() - 0.5
+    day = _unit("c", serial[:6], local.date().isoformat()) - 0.5
     return min(1.0, max(0.0, base + day * 0.35))
 
 
@@ -104,9 +112,8 @@ def _shape_kw(hour: float, weekend: bool) -> float:
 
 
 def _raw_load_kw(p: SimProfile, ts: datetime, temp_c: float) -> float:
-    rand = _rng("profile", p.serial)
-    base = 0.08 + rand.random() * 0.12
-    evening = 0.7 + rand.random() * 0.6
+    base = 0.08 + _unit("profile", p.serial, "base") * 0.12
+    evening = 0.7 + _unit("profile", p.serial, "evening") * 0.6
     local = ts + timedelta(hours=IST_OFFSET_H)
     hour = local.hour + local.minute / 60
     summer = 3 <= local.month <= 6
@@ -141,7 +148,7 @@ def load_kw(p: SimProfile, ts: datetime) -> float:
     key = (p.serial, p.monthly_kwh, p.ac_count, p.has_geyser, p.has_ev, month)
     if key not in _scale_cache:
         _scale_cache[key] = _scale(p, month)
-    jitter = 0.9 + 0.2 * _rng("j", p.serial, ts.isoformat()).random()
+    jitter = 0.9 + 0.2 * _unit("j", p.serial, ts.isoformat())
     return _raw_load_kw(p, ts, ambient_temp_c(ts, p.serial)) * _scale_cache[key] * jitter
 
 

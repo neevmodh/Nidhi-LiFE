@@ -10,7 +10,7 @@ import zlib
 from calendar import monthrange
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, insert, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -133,20 +133,20 @@ def catch_up(db: Session, meter: Meter, user: User, now: datetime | None = None)
         imp += step.import_kwh
         exp += step.export_kwh
         rows.append(
-            MeterReading(
-                meter_id=meter.id,
-                ts=ts,
-                import_kwh=round(imp, 4),
-                export_kwh=round(exp, 4),
-                load_kw=step.load_kw,
-                pv_kw=step.pv_kw,
-            )
+            {
+                "meter_id": meter.id,
+                "ts": ts,
+                "import_kwh": round(imp, 4),
+                "export_kwh": round(exp, 4),
+                "load_kw": step.load_kw,
+                "pv_kw": step.pv_kw,
+            }
         )
         ts += meter_sim.INTERVAL
     if not rows:
         return 0
-    db.add_all(rows)
     try:
+        db.execute(insert(MeterReading), rows)  # one executemany: several times faster than adding objects
         db.commit()
     except IntegrityError:  # another process advanced the meter first; its rows are identical
         db.rollback()
@@ -178,6 +178,56 @@ def usage_between(db: Session, meter: Meter, start: datetime, end: datetime) -> 
     base_imp = before.import_kwh if before else rows[0].import_kwh
     base_exp = before.export_kwh if before else rows[0].export_kwh
     return round(rows[-1].import_kwh - base_imp, 3), round(rows[-1].export_kwh - base_exp, 3)
+
+
+def usage_many(db: Session, meters: list[Meter], start: datetime, end: datetime) -> dict[int, tuple[float, float]]:
+    """usage_between for a whole fleet in two queries: {meter id: (kWh imported, kWh exported)}.
+
+    The register at `start` is the latest reading at or before it; with none (a meter newer than `start`) the
+    first reading inside the window is the base, exactly as usage_between does for one meter."""
+    if not meters:
+        return {}
+    ids = [m.id for m in meters]
+    latest = (
+        select(MeterReading.meter_id, func.max(MeterReading.ts).label("ts"))
+        .where(MeterReading.meter_id.in_(ids), MeterReading.ts <= end)
+        .group_by(MeterReading.meter_id)
+        .subquery()
+    )
+    last = {
+        r.meter_id: r
+        for r in db.scalars(select(MeterReading).join(latest, (MeterReading.meter_id == latest.c.meter_id) & (MeterReading.ts == latest.c.ts)))
+    }
+    base_at = (
+        select(MeterReading.meter_id, func.max(MeterReading.ts).label("ts"))
+        .where(MeterReading.meter_id.in_(ids), MeterReading.ts <= start)
+        .group_by(MeterReading.meter_id)
+        .subquery()
+    )
+    before = {
+        r.meter_id: r
+        for r in db.scalars(select(MeterReading).join(base_at, (MeterReading.meter_id == base_at.c.meter_id) & (MeterReading.ts == base_at.c.ts)))
+    }
+    first_ts = (
+        select(MeterReading.meter_id.label("mid"), func.min(MeterReading.ts).label("fts"))
+        .where(MeterReading.meter_id.in_(ids), MeterReading.ts > start, MeterReading.ts <= end)
+        .group_by(MeterReading.meter_id)
+        .subquery()
+    )
+    first_in = {
+        r.meter_id: (r.import_kwh, r.export_kwh)
+        for r in db.scalars(select(MeterReading).join(first_ts, (MeterReading.meter_id == first_ts.c.mid) & (MeterReading.ts == first_ts.c.fts)))
+    }
+    out: dict[int, tuple[float, float]] = {}
+    for mid in ids:
+        end_row = last.get(mid)
+        if end_row is None or as_utc(end_row.ts) <= start:
+            out[mid] = (0.0, 0.0)  # nothing inside the window
+            continue
+        base = before.get(mid)
+        base_imp, base_exp = (base.import_kwh, base.export_kwh) if base else first_in.get(mid, (end_row.import_kwh, end_row.export_kwh))
+        out[mid] = (round(end_row.import_kwh - base_imp, 3), round(end_row.export_kwh - base_exp, 3))
+    return out
 
 
 def day_bounds(day: date) -> tuple[datetime, datetime]:
