@@ -11,7 +11,8 @@ import { GedaStrip, LanguageSwitcher, Logo, LogoMark } from "@/components/Shell"
 import { useI18n, type MessageKey } from "@/i18n";
 import { useAuth } from "@/lib/auth";
 import { DEMO } from "@/lib/demo";
-import { APK_URL, APP_URL } from "@/lib/links";
+import { API_URL } from "@/lib/api";
+import { APK_URL, APP_URL, REPO_URL, VIDEO_URL } from "@/lib/links";
 
 const STEPS: { n: string; t: MessageKey; b: MessageKey }[] = [
   { n: "1", t: "how.1.t", b: "how.1.b" },
@@ -51,7 +52,7 @@ export default function Landing() {
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-8">
           <Logo size={64} />
           <nav aria-label="Main" className="hidden gap-1 text-sm md:flex">
-            {([["#features", "feat.kicker"], ["#how", "nav.how"], ["#data", "nav.data"], ["#who", "nav.communities"]] as [string, MessageKey][]).map(([href, k]) => (
+            {([["#explore", "nav.explore"], ["#features", "feat.kicker"], ["#how", "nav.how"], ["#data", "nav.data"], ["#who", "nav.communities"]] as [string, MessageKey][]).map(([href, k]) => (
               <a key={href} href={href} className="rounded-full px-4 py-2 font-medium text-muted hover:bg-surface-2 hover:text-text">{t(k)}</a>
             ))}
           </nav>
@@ -96,6 +97,8 @@ export default function Landing() {
       </section>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 sm:px-8">
+        <Explore />
+
         <section id="get" aria-labelledby="get-title" className="scroll-mt-24 pt-6">
           <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_1fr]">
             <div className="relative mx-auto h-[480px] w-full max-w-[520px] sm:h-[560px]" aria-hidden>
@@ -211,6 +214,80 @@ export default function Landing() {
         </div>
       </footer>
     </div>
+  );
+}
+
+// Every surface of Nidhi, each opening the live product: the household app, the meter screens, both staff
+// consoles (with their read-only demo logins filled in) and the free tools that need no account.
+const ICONS = {
+  phone: "M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM11 18h2",
+  gauge: "M12 14l4-4M3.3 19a10 10 0 1 1 17.4 0",
+  grid: "M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z",
+  map: "M9 3 3 6v15l6-3 6 3 6-3V3l-6 3zM9 3v15M15 6v15",
+  receipt: "M5 2h14v20l-3-2-2 2-2-2-2 2-2-2-3 2zM9 7h6M9 11h6M9 15h4",
+  sun: "M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4",
+} as const;
+
+function Explore() {
+  const { t } = useI18n();
+  const cards: { icon: keyof typeof ICONS; t: MessageKey; b: MessageKey; href: string; login?: string; tint: string; ink: string; external: boolean }[] = [
+    { icon: "phone", t: "ex.app.t", b: "ex.app.b", href: APP_URL, login: DEMO.household, tint: "bg-brand-soft", ink: "text-brand-strong", external: true },
+    { icon: "gauge", t: "ex.live.t", b: "ex.live.b", href: `${APP_URL}/live`, login: DEMO.household, tint: "bg-sun-soft", ink: "text-sun", external: true },
+    { icon: "grid", t: "ex.discom.t", b: "ex.discom.b", href: "/login?demo=discom", login: DEMO.discom, tint: "bg-sky-soft", ink: "text-sky", external: false },
+    { icon: "map", t: "ex.geda.t", b: "ex.geda.b", href: "/login?demo=geda", login: DEMO.geda, tint: "bg-danger-soft", ink: "text-clay", external: false },
+    { icon: "receipt", t: "ex.bill.t", b: "ex.bill.b", href: "#start", tint: "bg-brand-soft", ink: "text-brand-strong", external: false },
+    { icon: "sun", t: "ex.roof.t", b: "ex.roof.b", href: "/roof", tint: "bg-sun-soft", ink: "text-sun", external: false },
+  ];
+  const more: [MessageKey, string][] = [
+    ...(APK_URL ? ([["ex.apk", APK_URL]] as [MessageKey, string][]) : []),
+    ["ex.video", VIDEO_URL],
+    ["ex.code", REPO_URL],
+    ["ex.api", `${API_URL}/docs`],
+    ["ex.method", "/methodology"],
+  ];
+  return (
+    <section id="explore" aria-labelledby="explore-title" className="scroll-mt-24 pb-16 pt-4">
+      <p className="kicker text-sun">{t("ex.kicker")}</p>
+      <h2 id="explore-title" className="mt-2 max-w-2xl text-3xl font-bold sm:text-4xl">{t("ex.title")}</h2>
+      <p className="mt-3 max-w-2xl text-muted">{t("ex.sub")}</p>
+      <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {cards.map((c) => {
+          const inner = (
+            <>
+              <span className={`grid h-12 w-12 place-items-center rounded-2xl ${c.tint} ${c.ink}`}>
+                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={ICONS[c.icon]} /></svg>
+              </span>
+              <h3 className="mt-5 text-xl font-semibold">{t(c.t)}</h3>
+              <p className="mt-2 flex-1 leading-relaxed text-muted">{t(c.b)}</p>
+              <p className="mt-4 break-all text-xs text-muted">{c.login ? t("ex.demoLogin", { email: c.login }) : t("ex.noLogin")}</p>
+              <span className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-brand-strong">
+                {c.login ? t("ex.openDemo") : t("ex.open")}
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+              </span>
+            </>
+          );
+          const cls = "tilt flex flex-col rounded-3xl bg-surface p-7 shadow-[var(--shadow)]";
+          return c.external || c.href.startsWith("#") ? (
+            <a key={c.t} href={c.href} className={cls}>{inner}</a>
+          ) : (
+            <Link key={c.t} href={c.href} className={cls}>{inner}</Link>
+          );
+        })}
+      </div>
+      <div className="mt-6 flex flex-col gap-4 rounded-3xl border border-border bg-surface p-6 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted">{t("ex.password", { password: DEMO.password })}</p>
+        <div className="flex flex-wrap gap-2">
+          <span className="sr-only">{t("ex.more")}</span>
+          {more.map(([k, href]) =>
+            href.startsWith("/") ? (
+              <Link key={k} href={href} className="rounded-full border border-border px-4 py-2 text-sm font-semibold hover:bg-surface-2">{t(k)}</Link>
+            ) : (
+              <a key={k} href={href} target="_blank" rel="noopener noreferrer" className="rounded-full border border-border px-4 py-2 text-sm font-semibold hover:bg-surface-2">{t(k)}</a>
+            ),
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 

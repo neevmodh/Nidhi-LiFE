@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { CardPage } from "@/components/Page";
 import { ErrorNote, Field, inputClass } from "@/components/ui";
 import { useI18n } from "@/i18n";
@@ -10,11 +10,24 @@ import { useAuth } from "@/lib/auth";
 import { DEMO } from "@/lib/demo";
 import { APP_URL } from "@/lib/links";
 
+// A link like /login?demo=discom (from the landing page) opens the form with that read-only demo account filled in.
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginForm demo={null} />}>
+      <LoginFromUrl />
+    </Suspense>
+  );
+}
+
+function LoginFromUrl() {
+  return <LoginForm demo={useSearchParams().get("demo")} />;
+}
+
+function LoginForm({ demo }: { demo: string | null }) {
   const { t } = useI18n();
   const { signIn } = useAuth();
   const router = useRouter();
-  const [f, setF] = useState({ email: "", password: "" });
+  const [f, setF] = useState(() => (demo === "discom" || demo === "geda" ? { email: DEMO[demo], password: DEMO.password } : { email: "", password: "" }));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [slow, setSlow] = useState(false);
