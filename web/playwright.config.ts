@@ -27,6 +27,8 @@ export default defineConfig({
       command:
         "rm -f e2e-web.db && rm -rf e2e-web-uploads && uv run python -m app.seed && " +
         'uv run python -m app.create_admin --email officer@example.com --name "GEDA Officer" && ' +
+        'uv run python -m app.create_admin --email engineer@example.com --name "UGVCL Engineer" --role discom_engineer --discom ugvcl && ' +
+        'uv run python -m app.create_admin --email auditor@example.com --name "UGVCL Auditor" --role discom_auditor --discom ugvcl && ' +
         "uv run uvicorn app.main:app --port " +
         API_PORT,
       cwd: "../backend",

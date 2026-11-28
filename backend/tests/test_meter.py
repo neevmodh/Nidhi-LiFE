@@ -2,11 +2,12 @@
 
 from datetime import UTC, datetime, timedelta
 
+from conftest import HOUSEHOLD, register
+from sqlalchemy import func, select
+
 from app.db import SessionLocal
 from app.models import Meter, MeterFlag, MeterReading
 from app.services import meter_ingest, meter_sim
-from sqlalchemy import func, select
-from conftest import HOUSEHOLD, register
 
 PROFILE = meter_sim.SimProfile("NID0000001", 23.03, 72.58, 300, 2, True, False, 3.0)
 
@@ -125,9 +126,10 @@ def _linked(client, citizen):
     return info["serial"], info["secret"]
 
 
-def _signed(serial, secret, ts=None, imp=1000.0, exp=0.0):
+def _signed(serial, secret, ts=None, imp=1000.0, exp=0.0, fmt="z"):
     ts = ts or datetime.now(UTC)
-    reading = {"serial": serial, "ts": ts.isoformat(), "import_kwh": imp, "export_kwh": exp, "load_kw": 0.5, "pv_kw": 0.0}
+    sent = ts.strftime("%Y-%m-%dT%H:%M:%SZ") if fmt == "z" else ts.isoformat()
+    reading = {"serial": serial, "ts": sent, "import_kwh": imp, "export_kwh": exp, "load_kw": 0.5, "pv_kw": 0.0}
     return {**reading, "signature": meter_ingest.sign(reading, secret)}
 
 
@@ -226,3 +228,81 @@ def test_projection_uses_the_span_the_readings_cover(client, citizen):
     # The household said 300 kWh a month; the simulator is calibrated to it, give or take the season.
     assert 0.6 * 300 < bill["projected_load_kwh"] < 1.5 * 300
     assert bill["mismatch"] is False
+
+
+def test_signature_is_over_text_so_any_language_can_produce_it(client, citizen):
+    """A device in another language signs "|"-joined text; Z or +00:00 timestamps and 1000 or 1000.0 all work."""
+    import hashlib
+    import hmac
+
+    serial, secret = _linked(client, citizen)
+    now = datetime.now(UTC) - timedelta(minutes=2)
+    for i, (ts, imp) in enumerate([(now.strftime("%Y-%m-%dT%H:%M:%SZ"), "1000"), ((now + timedelta(minutes=1)).isoformat(), "1000.250")]):
+        text = f"{serial}|{ts}|{float(imp):.3f}|0.000|0.5000|0.0000"
+        sig = hmac.new(secret.encode(), text.encode(), hashlib.sha256).hexdigest()
+        body = {"serial": serial, "ts": ts, "import_kwh": float(imp), "export_kwh": 0, "load_kw": 0.5, "pv_kw": 0, "signature": sig}
+        assert client.post("/api/meter/readings", json=body).status_code == 201, i
+
+
+def test_a_signed_reading_with_an_unparseable_time_is_refused(client, citizen):
+    serial, secret = _linked(client, citizen)
+    bad = {"serial": serial, "ts": "yesterday", "import_kwh": 1, "export_kwh": 0, "load_kw": 0, "pv_kw": 0}
+    resp = client.post("/api/meter/readings", json={**bad, "signature": meter_ingest.sign(bad, secret)})
+    assert resp.status_code == 422
+
+
+# --- Account export and deletion -----------------------------------------------------
+
+
+def test_deleting_an_account_removes_its_meter_and_everything_on_it(client, citizen):
+    from app.models import Meter, MeterEvent
+
+    client.get("/api/meter/live", headers=citizen)
+    client.post("/api/meter/appliance", json={"kind": "geyser"}, headers=citizen)
+    client.post("/api/readings", json={"month": "2026-10", "kwh": 900}, headers=citizen)
+    client.get("/api/meter/bill", headers=citizen)  # raises a flag
+    with SessionLoc() as db:
+        assert db.scalar(select(func.count(MeterReading.id))) > 0
+        assert db.scalar(select(func.count(MeterFlag.id))) == 1
+        assert db.scalar(select(func.count(MeterEvent.id))) == 1
+    assert client.request("DELETE", "/api/account", json={"password": "secret123"}, headers=citizen).status_code == 204
+    with SessionLoc() as db:
+        for model in (Meter, MeterReading, MeterFlag, MeterEvent):
+            assert db.scalar(select(func.count(model.id))) == 0, model.__name__
+
+
+def test_the_export_includes_the_meter_and_its_readings(client, citizen):
+    import json
+
+    client.get("/api/meter/live", headers=citizen)
+    data = json.loads(client.get("/api/account/export", headers=citizen).text)
+    meter = data["smart_meter"]
+    assert meter["simulated"] is True and meter["serial"].startswith("NID") and len(meter["readings"]) >= 672
+    assert meter["reading_columns"] == ["time", "import_kwh", "export_kwh", "load_kw", "solar_kw"]
+
+
+def test_the_export_has_no_meter_when_there_is_none(client, citizen):
+    import json
+
+    assert json.loads(client.get("/api/account/export", headers=citizen).text)["smart_meter"] is None
+
+
+def test_fleet_usage_equals_per_meter_usage(client):
+    """usage_many (two queries for the whole fleet) must agree with usage_between (one meter) for every meter."""
+    from app.models import User
+    from app.services import meter as svc
+    from app.timeutil import ist_day_bounds_utc, today_ist
+
+    for i in range(3):
+        h = register(client, f"fleet{i}@example.com")
+        client.put("/api/household", json={**HOUSEHOLD, "monthly_kwh": 200 + 100 * i}, headers=h)
+        client.get("/api/meter/live", headers=h)
+    client.post("/api/meter/link", headers=register(client, "dev@example.com"))  # no household: ignored below
+    start, end = ist_day_bounds_utc(today_ist())
+    with SessionLoc() as db:
+        meters = list(db.scalars(select(Meter)))
+        many = svc.usage_many(db, meters, start, min(datetime.now(UTC), end))
+        for m in meters:
+            assert many[m.id] == svc.usage_between(db, m, start, min(datetime.now(UTC), end)), m.serial
+        _ = User  # the users exist; nothing else to check
+    assert svc.usage_many(SessionLocal(), [], start, end) == {}
