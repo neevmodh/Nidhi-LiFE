@@ -1,10 +1,10 @@
 # Nidhi: progress log
 
-This is the working record for the HackCult '26 submission: what's built, how it was verified, what went wrong and how it was fixed, and what's left. For the product overview and setup, see [README.md](README.md).
+This is the working record for Nidhi's build: what's built, how it was verified, what went wrong and how it was fixed, and what's left. For the product overview and setup, see [README.md](README.md).
 
 | | |
 |---|---|
-| **Problem statement** | HC26-GEDA01, Development of an Interactive "Mission LiFE" Citizen Engagement Application (GEDA) |
+| **Problem statement** | Development of an Interactive "Mission LiFE" Citizen Engagement Application (GEDA) |
 | **Track** | Track 1: Green Energy & Sustainability |
 | **Phase 1 deadline** | 4 November 2026, 6:30 PM IST (submitted 2 Nov) |
 | **Finale** | **14 November 2026, IIT Gandhinagar**: booth demo 10:45–1:15, stage pitch 3:00–5:00 |
@@ -21,6 +21,21 @@ The finale asks for a live demo with dynamic inputs rather than dummy data, so:
 - **No duplicates.** Proof photos are decoded (fake files rejected), fingerprinted with a perceptual hash, and refused if the same photo, even resized or re-compressed, already backs a claim. Ward spellings are normalised.
 - **AI pre-screening** of proof photos for the review queue; a person still decides.
 - **Supabase-ready.** Pooler support, a separate migration URL, private Storage bucket for proofs, and Row Level Security on every table.
+
+## BUILD 2036 build (28 Nov 2026): live meter, energy agent and the DISCOM console
+
+Built for BUILD 2036 (TiE Global Summit 2026, Frontier 2: Climate & Clean Energy). Nidhi's UI is unchanged; these are new screens and a new portal.
+
+- **Smart meter, simulated or real.** `services/meter_sim.py` (ported from EcoPower 3.0's AMI simulator) is a deterministic function of serial and time, so a simulated meter advances lazily on read with no worker. `services/meter_ingest.py` (HMAC, replay window, monotonic registers) accepts a real meter's signed readings at `POST /api/meter/readings`. Simulated readings are labelled in every response and screen.
+- **Bill from the meter** with the projection taken from the span the readings cover, the slab split, the net-metering credit, and a check against the latest bill with a ready-to-send letter and a flag for the utility.
+- **Energy agent** (`services/agent.py`): tools compute every number; the ranking is deterministic; an AI model may only reword the summary under the coach's number guard. A heavy load run off-peak is confirmed **by the meter** and logged as verified with no photo.
+- **Society energy**, totals only and hidden below five meters.
+- **DISCOM console** at `/discom` (roles `discom_admin`, `discom_engineer`, `discom_auditor` scoped to one company): overview, feeders, anomalies, outages with in-app notification, and solar requests. `create_admin --role discom_admin --discom ugvcl`.
+- **App**: Live energy, Energy agent, Bill from your meter and Society energy, linked from Me and the wide-window sidebar. **Web**: the console, in English, Gujarati and Hindi.
+
+Bugs found by running it, now fixed and tested: timestamps went out without a timezone on SQLite (the chart's shaded hours drifted); the projection divided a week of readings by the whole month (every home looked 88% off its bill); the simulator was calibrated to April, so winter looked empty; onboarding's own reading shadowed a real bill in the check.
+
+Checked: backend suite on SQLite and PostgreSQL, web and app unit tests, types and lint, and the full loop in a browser (tell the meter the geyser ran, the agent confirms it, points arrive with no photo; the DISCOM console shows the same homes by meter number).
 
 ## Submission checklist
 
