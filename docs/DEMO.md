@@ -1,6 +1,6 @@
 # Demo script
 
-For the 5-minute stage pitch (about 3 minutes of it live), the video (#22) and the booth. The deck is the HackCult '26 pitch in Claude; the live demo follows the problem statement's four features in order.
+For the 5-minute stage pitch (about 3 minutes of it live), the video (#22) and the booth. The deck is the pitch deck, made in Claude; the live demo follows the problem statement's four features in order.
 
 ## Before you go on
 

@@ -47,6 +47,30 @@ def require_reviewer(user: Annotated[User, Depends(get_current_user)]) -> User:
 
 
 STAFF_ROLES = (Role.admin, Role.officer, Role.reviewer, Role.auditor)
+DISCOM_ROLES = (Role.discom_admin, Role.discom_engineer, Role.discom_auditor)
+
+
+def require_discom(user: Annotated[User, Depends(get_current_user)]) -> User:
+    """The DISCOM console: DISCOM staff for their own company, and the GEDA state team and auditors (read-only)."""
+    if user.role not in (*DISCOM_ROLES, Role.admin, Role.auditor):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "DISCOM access required")
+    return user
+
+
+def require_discom_engineer(user: Annotated[User, Depends(get_current_user)]) -> User:
+    """Changing things in the DISCOM console (raising outages, resolving flags). Auditors only read."""
+    if user.role not in (Role.discom_admin, Role.discom_engineer):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "DISCOM engineer access required")
+    return user
+
+
+def discom_scope(user: User, requested: str | None = None) -> str | None:
+    """The distribution company a user may see: their own for DISCOM staff, any (or all, None) for GEDA."""
+    if user.role in DISCOM_ROLES:
+        if requested is not None and requested != user.discom:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "You can only see your own distribution company")
+        return user.discom
+    return requested
 
 
 def district_scope(user: User, requested: int | None = None) -> int | None:
@@ -62,4 +86,6 @@ def district_scope(user: User, requested: int | None = None) -> int | None:
 CurrentUser = Annotated[User, Depends(get_current_user)]
 AdminUser = Annotated[User, Depends(require_admin)]
 ReviewerUser = Annotated[User, Depends(require_reviewer)]
+DiscomUser = Annotated[User, Depends(require_discom)]
+DiscomEngineer = Annotated[User, Depends(require_discom_engineer)]
 OptionalUser = Annotated[User | None, Depends(get_optional_user)]

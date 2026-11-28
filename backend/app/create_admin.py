@@ -19,12 +19,17 @@ from app.migrate import upgrade_to_head
 from app.models import District, Role, User
 from app.schemas import MAX_PASSWORD_BYTES
 from app.security import hash_password
+from app.services import factors
+
+DISCOM_ROLES = ("discom_admin", "discom_engineer", "discom_auditor")
 
 
 def create_admin(
-    email: str, name: str, password: str, district: str | None = None, role: str | None = None
+    email: str, name: str, password: str, district: str | None = None, role: str | None = None,
+    discom: str | None = None,
 ) -> User:
-    """A GEDA state admin, a district officer (with `district`), or a reviewer or auditor (with `role`)."""
+    """A GEDA state admin, a district officer (with `district`), a reviewer or auditor (with `role`), or DISCOM
+    staff (a `discom_*` role with `discom`, the distribution company's code such as ugvcl)."""
     # Same rules as citizen sign-up.
     TypeAdapter(EmailStr).validate_python(email)
     if not 8 <= len(password) or len(password.encode()) > MAX_PASSWORD_BYTES:
@@ -45,6 +50,13 @@ def create_admin(
             user.district_id = d.id
         elif chosen == Role.officer:
             raise ValueError("A district officer needs --district")
+        if chosen.value in DISCOM_ROLES:
+            code = (discom or "").strip().lower()
+            if code not in factors.DISCOMS:
+                raise ValueError(f"A DISCOM account needs --discom, one of: {', '.join(factors.DISCOMS)}")
+            user.discom = code
+        elif discom:
+            raise ValueError("--discom only goes with a discom_* role")
         user.role = chosen
         user.password_hash = hash_password(password)
         db.commit()
@@ -57,17 +69,18 @@ def main() -> None:
     parser.add_argument("--email", required=True)
     parser.add_argument("--name", required=True)
     parser.add_argument("--district", help="make a district officer (or scope a reviewer) to this district")
-    parser.add_argument("--role", choices=["admin", "officer", "reviewer", "auditor"],
-                        help="GEDA role; default admin, or officer when --district is given")
+    parser.add_argument("--role", choices=["admin", "officer", "reviewer", "auditor", *DISCOM_ROLES],
+                        help="GEDA or DISCOM role; default admin, or officer when --district is given")
+    parser.add_argument("--discom", help="the distribution company for a discom_* role, e.g. ugvcl")
     args = parser.parse_args()
 
     password = os.environ.get("LIFELINE_ADMIN_PASSWORD") or getpass.getpass("Password (min 8 characters): ")
     upgrade_to_head()
     try:
-        user = create_admin(args.email, args.name, password, args.district, args.role)
+        user = create_admin(args.email, args.name, password, args.district, args.role, args.discom)
     except (ValueError, ValidationError) as exc:
         sys.exit(f"Not created: {exc}")
-    print(f"GEDA {user.role.value} ready: {user.email}")
+    print(f"{'DISCOM' if user.discom else 'GEDA'} {user.role.value} ready: {user.email}")
 
 
 if __name__ == "__main__":

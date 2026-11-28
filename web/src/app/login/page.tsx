@@ -46,7 +46,7 @@ export default function LoginPage() {
         return;
       }
       signIn(token, user);
-      router.replace("/geda");
+      router.replace(user.role.startsWith("discom_") ? "/discom" : "/geda");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
       setBusy(false);

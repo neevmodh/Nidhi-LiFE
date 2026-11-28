@@ -12,7 +12,7 @@
 [![App](https://img.shields.io/badge/app-nidhi--app--rosy.vercel.app-C9873E)](https://nidhi-app-rosy.vercel.app)
 ![Languages](https://img.shields.io/badge/languages-English%20·%20ગુજરાતી%20·%20हिन्दी-23312A)
 
-**HackCult '26** · Track 1: Green Energy & Sustainability · Problem statement **HC26-GEDA01**<br/>
+**Mission LiFE** · Green Energy & Sustainability<br/>
 Built for the **Gujarat Energy Development Agency (GEDA)** by team **Beyond Logic**
 
 **[▶ Demo video (1:30)](https://drive.google.com/file/d/1tO_5nZ16OITjVTpDeNKqhzACYESNHPkz/view)** · **[Website](https://nidhi-gujarat.vercel.app)** · **[Open the app](https://nidhi-app-rosy.vercel.app)** · **[Android app (APK)](https://nidhi-gujarat.vercel.app/get)** · [GEDA console](https://nidhi-gujarat.vercel.app/geda) · [API docs](https://lifeline-api-9ox2.onrender.com/docs) · [How we calculate](https://nidhi-gujarat.vercel.app/methodology) · [Design canvas](https://claude.ai/artifact/VdiyAQ5vFcb4wivcsi4vCX)
@@ -29,7 +29,7 @@ Nidhi is a **personal sustainability companion for Gujarat's households** and a 
 |---|---|---|---|
 | A bill photo fills in the units and the DISCOM; the footprint and a savings plan follow. | The bill split exactly as the DISCOM charges it, then *What if*: tap AC, LEDs or solar and watch ₹ and CO₂ change. | Questions in English, ગુજરાતી or हिन्दी, answered from the home's own numbers. An AI can't slip in a number. | 33 districts racing to their monthly goal in the app; GEDA's console with the funnel, themes, reviews and festival campaigns. |
 
-- **Covers the whole problem statement:** footprint and improvement over time, contextual nudges and daily challenges, gamification and social impact, and a resource hub for rooftop solar. [See how each is met](#how-it-meets-hc26-geda01).
+- **Covers the whole problem statement:** footprint and improvement over time, contextual nudges and daily challenges, gamification and social impact, and a resource hub for rooftop solar. [See how each is met](#how-it-meets-the-problem-statement).
 - **Honest by design:** estimates, self-reports and GEDA-verified impact are never added together, and actions with no defensible CO₂ figure earn points without claiming any.
 - **For everyone in Gujarat:** Android, iPhone and the web from one codebase, in three languages, with a desktop layout in a wide browser.
 - **Built to last:** 367 backend tests on SQLite and PostgreSQL, 97 app and website unit tests, 6 end-to-end flows and a Docker smoke test run on every pull request; more than 50 pull requests, each merged on green CI.
@@ -118,7 +118,7 @@ Nidhi is a **personal sustainability companion for Gujarat's households** and a 
 
 ## Contents
 
-[At a glance](#at-a-glance) · [The app](#the-app) · [Website and console](#website-and-console) · [Why Nidhi](#why-nidhi) · [What it does](#what-it-does) · [The game](#the-game-honest-by-design) · [Design](#design) · [How it meets HC26-GEDA01](#how-it-meets-hc26-geda01) · [Architecture](#architecture) · [Database](#database-schema) · [Honest numbers](#honest-numbers) · [Try it](#try-it) · [Run it locally](#run-it-locally) · [Deploying](#deploying) · [Tests](#tests) · [API](#api-overview) · [Project structure](#project-structure) · [Security and privacy](#security-and-privacy) · [Roadmap](#limitations-and-roadmap)
+[At a glance](#at-a-glance) · [The app](#the-app) · [Website and console](#website-and-console) · [Why Nidhi](#why-nidhi) · [What it does](#what-it-does) · [The game](#the-game-honest-by-design) · [Design](#design) · [How it meets the problem statement](#how-it-meets-the-problem-statement) · [Architecture](#architecture) · [Database](#database-schema) · [Honest numbers](#honest-numbers) · [Try it](#try-it) · [Run it locally](#run-it-locally) · [Deploying](#deploying) · [Tests](#tests) · [API](#api-overview) · [Project structure](#project-structure) · [Security and privacy](#security-and-privacy) · [Roadmap](#limitations-and-roadmap)
 
 ## The app
 
@@ -198,6 +198,53 @@ GEDA has the same blind spot at state scale: who is taking part, in which Missio
 | 🌐 **Gujarati and Hindi** | Every screen in English, ગુજરાતી and हिन्दी, including the server's own text (action names, reasons, nudges), fetched again the moment you switch. One word per idea in each language (points is પોઇન્ટ and अंक everywhere), and a test fails if any key is missing or loses a placeholder. |
 | 🖥️ **Web, phone and desktop** | On a phone the bottom bar keeps clear of the gesture bar. In a wide browser window the app becomes a desktop app: a sidebar with the language switch, and two-column Home, Quests and Me. |
 
+#### Live meter: measure, act, prove
+
+Four screens in the app (Live energy, Energy agent, Bill from your meter, Society energy) turn the one-off bill photo into a live loop:
+
+| | |
+|---|---|
+| ⚡ **Live energy** | Power in use, from your panels and from the grid, today's units and CO₂, and the last 24 hours with the evening peak and the sun hours shaded. Refreshes every 30 seconds. A power cut your DISCOM plans for your feeder shows as a banner, and arrives as a notification. |
+| 🧪 **Honest about its source** | A household with no real meter gets a **simulated** one, clearly badged in the app and the console. Its load follows your own answers (ACs, geyser, EV, solar) and is calibrated to your stated units each month; its sun comes from solar geometry, cloud and cell temperature. "I just ran the geyser" tells it what happened. A real meter posts HMAC-signed readings instead, and the simulated history is dropped so the two never mix. |
+| 🧾 **Bill from your meter** | Units so far, the projection to month end from the span the readings actually cover, the exact slab split, the net-metering credit for what you send back, and a check against your latest bill. If they are 25% or more apart you get a ready-to-send letter to your DISCOM, and the utility sees a flag. |
+| 🤖 **Energy agent** | Reads the meter, profiles the week, prices the slab, reconciles the bill, then ranks actions by rupees and CO₂. Every number comes from code. An AI model may only reword the summary, and its text is dropped unless every number in it is one it was given. Each step is shown. |
+| ✅ **Proof without a photo** | "Confirm with my meter" logs *Ran a heavy appliance off-peak* as **verified** (full points) when the meter shows a load outside the evening peak well above that time of day's usual level (the median of the previous 7 days). |
+| 🏘️ **Society energy** | The society's meters added together: load, panels, spare solar, units, CO₂ and a 24-hour curve. Totals only, and nothing shows until five homes have meters, so no home can be picked out. |
+
+#### Connecting a real meter
+
+`POST /api/meter/link` (signed in as the household) switches the home from the simulated meter to a device and returns its serial and secret once. The device then posts a reading at least every 30 minutes to `POST /api/meter/readings`, signed with HMAC-SHA256 over **one line of text**, so any language can produce it:
+
+```
+serial|ts|import_kwh|export_kwh|load_kw|pv_kw
+NID0000001|2026-11-28T10:15:00Z|1000.500|0.000|0.5000|0.0000
+```
+
+`ts` is signed exactly as sent (any ISO 8601 time; `Z` or an offset), the two registers have 3 decimals and the two powers 4. The registers are cumulative kWh and must never go backwards.
+
+```python
+import hashlib, hmac, requests
+line = f"{serial}|{ts}|{imp:.3f}|{exp:.3f}|{load:.4f}|{pv:.4f}"
+sig = hmac.new(secret.encode(), line.encode(), hashlib.sha256).hexdigest()
+requests.post(f"{API}/api/meter/readings", json=dict(serial=serial, ts=ts, import_kwh=imp, export_kwh=exp, load_kw=load, pv_kw=pv, signature=sig))
+```
+
+A wrong signature or an unknown serial is `401`; a reading older than 30 minutes, more than 5 minutes ahead, or with an unreadable time is `422`; a duplicate time or a register that went backwards is `409` (the latter is also flagged for the DISCOM).
+
+### For DISCOMs: the console (web)
+
+A second staff portal next to GEDA's, at `/discom`, built the same way: a sidebar (a tab bar on phones), the company, language, refresh and print. A DISCOM account (`discom_admin`, `discom_engineer` or `discom_auditor`, tied to one distribution company) sees only its own company; the GEDA state team and auditors can look at any, read-only.
+
+| | |
+|---|---|
+| 📊 **Overview** | Meters, demand now, rooftop solar now, units imported and exported today, CO₂, the day's peak, what needs attention, and a 24-hour demand and solar curve. |
+| ⚡ **Feeders** | Each 11 kV feeder's load against its rating, a "running hot" flag at 80%, the week's peak, how far that peak sits above the 90th percentile (what shifting heavy loads could trim), and the feeder's day. |
+| ⚠️ **Anomalies** | A register that went backwards (not applied, flagged) and bills that disagree with the meter. Households appear by meter number and feeder only, never by name. Engineers resolve; auditors read. |
+| 🕐 **Outages** | Plan a cut for a feeder; every household on it is notified in the app and sees it on Live energy. |
+| ☀️ **Solar requests** | Households in the area asking for a rooftop survey: net-metering connections to expect, with their feeder. |
+
+Create an account: `python -m app.create_admin --email ops@ugvcl.example --name "UGVCL Ops" --role discom_admin --discom ugvcl`.
+
 ### For GEDA: the console (web)
 
 Ten pages, one per feature, in a sidebar (a scrolling tab bar on phones), with badges for what needs attention: **Overview, Map, Districts, Engagement, With Mission LiFE, Solar planner, Solar leads, Communities, Campaigns and Reviews**. The whole console works in English, ગુજરાતી and हिन्दी.
@@ -251,7 +298,7 @@ Nidhi has one look everywhere: **warm paper, deep ink, soft sage and saffron**, 
 
 Type: **Bricolage Grotesque** for headings and big numbers, **Inter** for reading, and Noto Sans Gujarati and Devanagari on the website. Motion: Reanimated springs and timings in `mobile/src/components/motion.tsx`.
 
-## How it meets HC26-GEDA01
+## How it meets the problem statement
 
 | The problem statement asks for | Nidhi |
 |---|---|
@@ -272,14 +319,15 @@ flowchart LR
         WEB["Next.js 16 on Vercel<br/>landing · free bill check<br/>GEDA console · methodology"]
     end
     subgraph Render["FastAPI on Render (Singapore)"]
-        R["Routers<br/>auth · household · actions · engine · me<br/>societies · duels · campaigns · push · admin · meta"]
-        S["Pure domain services<br/>footprint · impact · plan · engine · score · ledger<br/>solar · green_hours · weather_norm · gamification"]
+        R["Routers<br/>auth · household · actions · engine · me<br/>societies · duels · campaigns · push · admin · meta<br/>meter · discom"]
+        S["Pure domain services<br/>footprint · impact · plan · engine · score · ledger<br/>solar · green_hours · weather_norm · gamification<br/>meter_sim · meter_ingest · agent"]
         R --> S
     end
     subgraph Supabase["Supabase (Row Level Security on every table)"]
         DB[("PostgreSQL")]
         ST[("Private Storage<br/>proof photos")]
     end
+    DEV["Real smart meters · HMAC-signed readings<br/>POST /api/meter/readings"]
     PV["PVGIS · solar yield"]
     OM["Open-Meteo · forecast, temperature, archive"]
     AI["Groq / Claude · bills, proof pre-screening,<br/>coach note, Ask Nidhi (number-checked)"]
@@ -291,6 +339,7 @@ flowchart LR
     APP -- "REST + JWT, Accept-Language" --> R
     WEB -- "REST + JWT" --> R
     APP -. "shares types and gu/hi catalogues" .- WEB
+    DEV -- "signature · replay window · monotonic registers" --> R
     GH -- "POST /api/internal/push/run" --> R
     R -- "alerts" --> EXPO --> APP
     R --> DB
@@ -303,7 +352,9 @@ flowchart LR
     SV -. "gu.json · hi.json" .-> WEB
 ```
 
+- **The meter is a lazy, deterministic simulator or a signed device.** `meter_sim` is a pure function of the meter's serial and the time, so the API advances a simulated meter when it is read: no background worker, and two Render workers always agree. A real device signs one line of text with its per-meter secret (below); `meter_ingest` refuses a bad signature, a reading older than 30 minutes or from the future, and a cumulative register that goes backwards (flagged for the DISCOM instead). The simulator is ported from the AMI simulator in EcoPower 3.0.
 - **One source of truth.** The app imports the website's API types and language catalogues (`@shared` → `web/src`), so a change to the API or the wording breaks both or neither. Every factor and its source lives in `backend/app/services/factors.py` and is served at `GET /api/config` and on the methodology page.
+- **A meter goes with its owner.** The account export includes the meter and every reading; deleting the account removes the meter, its readings, its flags and its simulated events.
 - **Domain logic is pure and unit-tested:** footprint, per-household impact, the savings plan, the Action Engine, the LiFE Score, the Impact Ledger, solar sizing, Green Hours and the weather regression have no I/O.
 - **Nothing external can block a user.** Every outside service has a timeout and a fallback (Gujarat-average solar yield, no temperature reason, type the units by hand).
 - **Timezone-correct:** stored in UTC; days, streaks, caps, duels, quests and peak windows use IST.
@@ -416,10 +467,14 @@ Not drawn: `society_announcements`, `notifications`, `climate_months` and `distr
 | The Nidhi app in a browser | https://nidhi-app-rosy.vercel.app |
 | Android app (APK, the same link as the QR code) | https://nidhi-gujarat.vercel.app/get |
 | GEDA console (staff sign-in) | https://nidhi-gujarat.vercel.app/geda |
+| DISCOM console (staff sign-in) | https://nidhi-gujarat.vercel.app/discom |
+| Demo script for the live meter, agent and DISCOM console | [docs/BUILD2036-DEMO.md](docs/BUILD2036-DEMO.md) |
 | Demo video (1:30) | https://drive.google.com/file/d/1tO_5nZ16OITjVTpDeNKqhzACYESNHPkz/view |
 | API and interactive docs | https://lifeline-api-9ox2.onrender.com/docs |
 
 The API runs on Render's free tier, which sleeps when idle. A scheduled GitHub Action pings it every 10 minutes to keep it awake, and the app and website retry reads and sign-in while it wakes, so a first sign-in waits instead of failing.
+
+**Live meters.** A household gets its simulated meter the first time it opens Live energy, so the DISCOM console fills up as households do. For a quick look, sign five households up into one society and open Live energy on each (the demo script has the steps).
 
 **Demo data.** The live database holds 276 demo households in 8 communities, with 3 duels and a Peak Hour Challenge on 14 November, so the leagues, ledgers and console have something to show. Every demo name carries "demo" (communities and the peak event "(Demo)") and every demo email is `demo-nidhi-NNN@example.com`. One command removes all of it (below). Everything else comes from real people using the app.
 
@@ -456,7 +511,11 @@ Or run everything with Docker: `docker compose up --build --wait` (PostgreSQL, A
 | App, web version | Vercel project `nidhi-app` | `cd mobile && npm run export:web && cd dist && vercel deploy --prod` |
 | App, Android | EAS (`mobile/eas.json`) | `cd mobile && npx eas-cli build -p android --profile preview` gives an installable APK (about 56 MB: real-phone CPUs only, with code and resource shrinking). Push needs `google-services.json` as the EAS file variable `GOOGLE_SERVICES_JSON` (read by `mobile/app.config.ts`) and the Firebase service account key in EAS credentials (FCM V1); both files are git-ignored. |
 
-Website environment (Vercel, production): `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL` (the app's web address) and `NEXT_PUBLIC_APK_URL` (the latest APK). The app reads `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_CONSOLE_URL` at build time. A new web origin also needs adding to `cors_origin_regex` in `backend/app/config.py`.
+Website environment (Vercel, production): `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL` (the app's web address) and `NEXT_PUBLIC_APK_URL` (the latest APK). The app reads `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_CONSOLE_URL` (GEDA) and `EXPO_PUBLIC_DISCOM_CONSOLE_URL` at build time. The meter secrets are derived from `JWT_SECRET`, so there is no new secret to set; rotating `JWT_SECRET` changes every simulated meter's secret, which only matters for a device linked earlier, so re-link it. A new web origin also needs adding to `cors_origin_regex` in `backend/app/config.py`.
+
+DISCOM staff accounts are made the same way as GEDA's, from a shell on the API: `python -m app.create_admin --email ops@ugvcl.example --name "UGVCL Ops" --role discom_admin --discom ugvcl` (roles `discom_admin`, `discom_engineer`, `discom_auditor`; `--discom` is `ugvcl`, `mgvcl`, `dgvcl`, `pgvcl` or `torrent`).
+
+This release adds five tables (`meters`, `meter_readings`, `meter_events`, `meter_flags`, `outages`) and three values to the `role` enum. The migration is additive and the start-up `alembic upgrade` applies it, so the order below is all there is to do.
 
 Two things that have bitten us:
 
@@ -467,11 +526,11 @@ Two things that have bitten us:
 
 | Suite | Command | Covers |
 |---|---|---|
-| Backend (pytest, 367 tests) | `cd backend && uv run pytest` | Footprint, DISCOM bills, per-household impact, plan, Action Engine, LiFE Score, Impact Ledger, community kinds and leagues, duels and the 40% floor, peak events and their window, Web and Expo push (timing, cap, language, dead tokens), duplicate and fake photos, translations (every key in Gujarati and Hindi, placeholders intact), officer scoping, Bill X-ray (the parts add up to the bill for every tariff and slab boundary), Ask Nidhi (invented numbers or actions rejected, model down, Gujarati and Hindi never sent to the model, rate limit), email and mobile-number sign-in, account export and deletion, the demo seeder, every API flow, migrations match models |
+| Backend (pytest, 400+ tests) | `cd backend && uv run pytest` | Footprint, DISCOM bills, per-household impact, plan, Action Engine, LiFE Score, Impact Ledger, community kinds and leagues, duels and the 40% floor, peak events and their window, Web and Expo push (timing, cap, language, dead tokens), duplicate and fake photos, translations (every key in Gujarati and Hindi, placeholders intact), officer scoping, Bill X-ray (the parts add up to the bill for every tariff and slab boundary), Ask Nidhi (invented numbers or actions rejected, model down, Gujarati and Hindi never sent to the model, rate limit), email and mobile-number sign-in, account export and deletion, the demo seeder, every API flow, migrations match models, the smart-meter simulator (deterministic, calibrated, daylight-only solar), signed ingest (forged, replayed, future and duplicate readings refused; a register going backwards flagged), the meter-derived bill and its check against a scanned bill, the energy agent, meter-confirmed actions, society totals hidden below five meters, and the DISCOM console's roles and scope; every meter and DISCOM endpoint against every kind of caller (signed out, citizen, GEDA district staff, each DISCOM role, another company's staff), bad input on the ingest and outage endpoints, signatures produced in another language, account export and deletion with a meter, and the fleet queries against the one-meter ones |
 | Backend on PostgreSQL | `TEST_DATABASE_URL=postgresql+psycopg://… uv run pytest` | The same suite on Postgres (CI) |
 | Web unit (Vitest, 33 tests) | `cd web && npm test` | The on-device bill parser (also checked against 254 real bills from Adaption), festival campaign dates, roof area within 1% and the roof page's return addresses, the with-vs-without projection, every website, console and app key translated with its placeholders, retrying while the API wakes up (reads and sign-in only, never logging an action twice) |
-| App unit (Vitest, 64 tests) | `cd mobile && npm test` | India-time days and weeks, streak flames, weekly quests, the journey stages at each threshold, prizes (exact targets, rejected logs never count, bad numbers treated as zero), progress against the baseline, the bill on the phone equal to the server's to the paisa, the what-if levers, the district map's bands and point-in-district taps, the appliance planner's hourly index and best start, goal status, the roof measurer's links and the survey pipeline, rupee grouping and avatar initials in any script |
-| Web end-to-end (Playwright, 6 tests) | `cd web && npm run e2e` | Landing check carries its answers into the app, Get Nidhi links, no dead links, phone layout, GEDA console (funnel, themes, communities, creating a Peak Hour Challenge), staff-only access |
+| App unit (Vitest, 70 tests) | `cd mobile && npm test` | India-time days and weeks, streak flames, weekly quests, the journey stages at each threshold, prizes (exact targets, rejected logs never count, bad numbers treated as zero), progress against the baseline, the bill on the phone equal to the server's to the paisa, the what-if levers, the district map's bands and point-in-district taps, the appliance planner's hourly index and best start, goal status, the roof measurer's links and the survey pipeline, rupee grouping and avatar initials in any script, the live-meter chart geometry and India-time formatting |
+| Web end-to-end (Playwright, 12 tests) | `cd web && npm run e2e` | Landing check carries its answers into the app, Get Nidhi links, no dead links, phone layout, GEDA console (funnel, themes, communities, creating a Peak Hour Challenge), staff-only access; the DISCOM console: role routing (GEDA, households and signed-out visitors kept apart), the overview and its simulated-meter banner, planning and cancelling an outage that the household sees, an auditor who can only read, a flagged bill resolved without any household name on the page, Gujarati and Hindi, and no sideways scrolling at 390 px |
 | App | `cd mobile && npx tsc --noEmit && npm run export:web` | Types (including the shared web API types) and a full web build |
 
 GitHub Actions runs all of these on every pull request and push, plus a Docker Compose smoke test with a real sign-up, action and GEDA overview. Edge cases have tests of their own (slab boundaries, India-time midnight and week starts, leap days, rejected logs, bad numbers from the server, invented AI numbers), and so do past bugs (half-translated screens, a lost placeholder). Every new screen was also walked through in a browser at 390 px and 1280 px in English, Gujarati and Hindi, with no page errors.
@@ -493,6 +552,8 @@ GitHub Actions runs all of these on every pull request and push, plus a Docker C
 | Alerts | `POST/DELETE /api/push/subscribe` (Web Push) · `POST/DELETE /api/push/expo` · `POST /api/internal/push/run` (scheduler) |
 | Your data | `GET /api/account/export` · `DELETE /api/account` |
 | GEDA | `GET /api/admin/habit-scenario` · `GET/PATCH /api/admin/solar-leads` · `GET /api/admin/overview` · `GET /api/admin/funnel` · `GET /api/admin/themes` · `GET /api/admin/communities` · `GET /api/admin/campaigns` · `GET /api/admin/districts/{id}` (+ `report.csv`) · `GET/POST /api/admin/reviews` |
+| Smart meter | `GET /api/meter` · `GET /api/meter/live` · `GET /api/meter/day?date=` · `GET /api/meter/bill` (projection, slab split, net-metering, check against your bill, letter) · `GET /api/meter/agent` · `POST /api/meter/agent/confirm` (verified, no photo) · `POST /api/meter/appliance` (simulated meters only) · `GET /api/meter/society` · `POST /api/meter/link` (switch to a real device) · `POST /api/meter/readings` (device, HMAC-signed) |
+| DISCOM | `GET /api/discom/overview` · `/series` · `/feeders` · `/feeders/{feeder}/series` · `/anomalies` · `POST /anomalies/{id}/resolve` · `GET/POST/DELETE /outages` · `GET /solar-leads` (all take `?discom=` for the state team) |
 | Meta | `GET /api/health` · `GET /api/config` (every factor and source) · interactive docs at `/docs` |
 
 ## Project structure
@@ -539,14 +600,18 @@ Nidhi/
 - The Torrent Power tariff is from published summaries until checked against the GERC schedule.
 - A person approves every proof; next is EXIF date and location checks alongside the AI pre-screen.
 - Gujarati and Hindi were rewritten by hand from a machine draft; a native speaker's read is still due before wide release.
-- Bill X-ray's split by appliance is an estimate from the household's answers, labelled as such, until smart-meter data is available.
-- Next: DISCOM smart-meter data in place of manual readings, and WhatsApp alerts.
+- Bill X-ray's split by appliance is an estimate from the household's answers, labelled as such. The live meter measures the home as a whole, not each appliance.
+- Smart-meter data is simulated until a real meter is linked, and is labelled so everywhere. The signed ingest endpoint is built and tested, but no real meter or head-end system has been connected yet.
+- The meter can confirm one action today (a heavy load run outside the evening peak). Others, such as the AC set point, cannot be proved from a whole-home reading.
+- The DISCOM console is built for demo scale: up to 800 meters per company. Measured on SQLite with 800 meters, the first load after a quiet week takes about 11 seconds (every meter backfills its readings once), then the overview takes about 0.5 seconds, feeders 0.6 and the demand curve 0.7. A production rollout would aggregate in the database throughout and run the simulator, not the request, to advance meters.
+- Feeder ratings are derived from sanctioned loads with a diversity factor, not from the DISCOM's asset register.
+- Next: a head-end system adapter for real meters, WhatsApp alerts, and an EV and battery plan on top of the meter.
 
 ---
 
 <div align="center">
 
-Built for **HackCult '26** by team **Beyond Logic** · Mission LiFE · Gujarat Energy Development Agency<br/>
+Built by team **Beyond Logic** · Mission LiFE · Gujarat Energy Development Agency<br/>
 District boundaries © geoBoundaries (ODbL) · Solar data © EU JRC PVGIS · Weather by Open-Meteo · Base map © Esri
 
 </div>

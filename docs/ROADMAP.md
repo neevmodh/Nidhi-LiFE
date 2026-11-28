@@ -1,6 +1,6 @@
 # Nidhi roadmap
 
-The build plan for the HackCult '26 finale (14 Nov 2026). The same items are tracked as GitHub issues, created by `scripts/create_github_issues.py`.
+The build plan for the finale (14 Nov 2026). The same items are tracked as GitHub issues, created by `scripts/create_github_issues.py`.
 
 Nidhi turns Mission LiFE awareness into measurable action for Gujarat: a personal footprint, an Action Engine that picks what matters for each home, rewards and community, solar adoption, and a GEDA console for regional monitoring. Mobile app first (Expo: Android, iPhone, web), Next.js for the landing page and GEDA console, FastAPI + PostgreSQL behind both.
 

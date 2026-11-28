@@ -16,7 +16,9 @@ export interface User {
   phone?: string | null;
   name: string;
   /** admin: GEDA state team; officer: a GEDA district officer (their district_id only). */
-  role: "citizen" | "admin" | "officer" | "reviewer" | "auditor";
+  role: "citizen" | "admin" | "officer" | "reviewer" | "auditor" | "discom_admin" | "discom_engineer" | "discom_auditor";
+  /** The distribution company of a DISCOM staff account (ugvcl, mgvcl, ...). */
+  discom?: string | null;
   society_id: number | null;
   society_role: "member" | "committee" | null;
   district_id: number | null;
@@ -742,7 +744,150 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 const json = (data: unknown): RequestInit => ({ method: "POST", body: JSON.stringify(data) });
 
+// --- Smart meter (household app) ----------------------------------------------------
+
+export interface MeterInfo {
+  serial: string;
+  source: "simulated" | "device";
+  /** True for a meter the platform simulates; the app labels it so. */
+  simulated: boolean;
+  discom: string;
+  feeder: string;
+  pv_kwp: number;
+  sanctioned_load_kw: number;
+}
+export interface MeterPoint { ts: string; load_kw: number; pv_kw: number }
+export interface MeterOutage { id: number; feeder: string; reason: string; starts_at: string; ends_at: string }
+export interface MeterLive {
+  meter: MeterInfo;
+  ts: string | null;
+  load_kw: number;
+  pv_kw: number;
+  /** Positive: drawing from the grid. Negative: sending to it. */
+  grid_kw: number;
+  today: { import_kwh: number; export_kwh: number; load_kwh: number; solar_share_pct: number; co2_kg: number };
+  series: MeterPoint[];
+  peak_hours: [number, number];
+  solar_hours: [number, number];
+  outages: MeterOutage[];
+}
+export interface MeterBill {
+  month: string;
+  simulated: boolean;
+  import_kwh: number;
+  export_kwh: number;
+  load_kwh: number;
+  projected_import_kwh: number;
+  projected_export_kwh: number;
+  projected_load_kwh: number;
+  projected_bill_rs: number;
+  net_metering_credit_rs: number;
+  projected_net_rs: number;
+  co2_kg: number;
+  days_elapsed: number;
+  days_in_month: number;
+  breakdown: { kwh: number; total_rs: number; energy_rs: number; fixed_rs: number; fppas_rs: number; duty_rs: number };
+  stated_kwh: number;
+  diff_pct: number;
+  mismatch: boolean;
+  complaint: { subject: string; body: string } | null;
+}
+export interface MeterRecommendation {
+  key: string;
+  title: string;
+  body: string;
+  rs_month: number;
+  co2_kg_month: number;
+  action_code: string | null;
+  meter_confirmable: boolean;
+}
+export interface MeterAgent {
+  summary: string;
+  written_by_ai: boolean;
+  facts: Record<string, number>;
+  steps: { tool: string; text: string }[];
+  recommendations: MeterRecommendation[];
+}
+export interface SocietyEnergy {
+  visible: boolean;
+  min_group_size: number;
+  homes: number;
+  homes_with_solar: number;
+  load_kw: number;
+  pv_kw: number;
+  spare_solar_kw: number;
+  import_today_kwh: number;
+  export_today_kwh: number;
+  solar_share_pct: number;
+  co2_today_kg: number;
+  series: MeterPoint[];
+}
+
+// --- DISCOM console ---------------------------------------------------------------
+
+export interface DiscomOverview {
+  discom: string;
+  name: string;
+  meters: number;
+  simulated_meters: number;
+  load_kw: number;
+  pv_kw: number;
+  grid_kw: number;
+  import_today_kwh: number;
+  export_today_kwh: number;
+  co2_today_kg: number;
+  peak_kw_today: number;
+  open_flags: number;
+  active_outages: number;
+  solar_leads: number;
+}
+export interface DiscomFeeder {
+  feeder: string;
+  meters: number;
+  rated_kw: number;
+  load_kw: number;
+  pv_kw: number;
+  utilisation_pct: number;
+  hot: boolean;
+  peak_kw_week: number;
+  peak_over_p90_kw: number;
+  peak_hour: number | null;
+  import_today_kwh: number;
+}
+export interface DiscomSeriesPoint { ts: string; load_kw: number; pv_kw: number }
+export interface DiscomFlag {
+  id: number;
+  kind: "register_rollback" | "bill_mismatch" | "night_spike";
+  detail: string;
+  status: "open" | "resolved";
+  feeder: string;
+  meter: string;
+  created_at: string;
+  resolved_at: string | null;
+}
+export interface DiscomOutage { id: number; feeder: string; reason: string; starts_at: string; ends_at: string; households: number }
+export interface DiscomLead { id: number; kwp: number; monthly_kwh: number; status: string; feeder: string | null; created_at: string }
+
+const dq = (discom?: string | null, extra = "") => {
+  const parts = [discom ? `discom=${encodeURIComponent(discom)}` : "", extra].filter(Boolean);
+  return parts.length ? `?${parts.join("&")}` : "";
+};
+
 export const api = {
+  discomOverview: (discom?: string | null) => request<DiscomOverview>(`/api/discom/overview${dq(discom)}`),
+  discomSeries: (discom?: string | null) => request<DiscomSeriesPoint[]>(`/api/discom/series${dq(discom, "hours=24")}`),
+  discomFeeders: (discom?: string | null) => request<DiscomFeeder[]>(`/api/discom/feeders${dq(discom)}`),
+  discomFeederSeries: (feeder: string, discom?: string | null) =>
+    request<DiscomSeriesPoint[]>(`/api/discom/feeders/${encodeURIComponent(feeder)}/series${dq(discom, "hours=24")}`),
+  discomAnomalies: (state: "open" | "resolved" | "all", discom?: string | null) =>
+    request<DiscomFlag[]>(`/api/discom/anomalies${dq(discom, `state=${state}`)}`),
+  discomResolve: (id: number) => request<DiscomFlag>(`/api/discom/anomalies/${id}/resolve`, { method: "POST" }),
+  discomOutages: (discom?: string | null) => request<DiscomOutage[]>(`/api/discom/outages${dq(discom)}`),
+  discomRaiseOutage: (data: { feeder: string; reason: string; starts_at: string; ends_at: string }) =>
+    request<DiscomOutage>("/api/discom/outages", json(data)),
+  discomCancelOutage: (id: number) => request<void>(`/api/discom/outages/${id}`, { method: "DELETE" }),
+  discomLeads: (discom?: string | null) => request<DiscomLead[]>(`/api/discom/solar-leads${dq(discom)}`),
+
   config: () => request<AppConfig>("/api/config"),
   districtSun: () => request<{ district_id: number; district: string; lat: number; lon: number; kwh_per_kwp: number }[]>("/api/sun/districts"),
   districts: () => request<District[]>("/api/districts"),

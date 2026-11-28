@@ -33,7 +33,7 @@ function Frame({ reviewer, children }: { reviewer: boolean; children: React.Reac
   const { t } = useI18n();
   const pathname = usePathname();
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { updated, auto, setAuto, refresh } = useConsole();
   const badges = useBadges();
   const page = currentPage(pathname);
@@ -62,6 +62,9 @@ function Frame({ reviewer, children }: { reviewer: boolean; children: React.Reac
                 <button onClick={() => void refresh()} className="rounded-full bg-surface-2 px-3 py-1.5 font-semibold hover:bg-border">{t("con.refresh")}</button>
                 <button onClick={() => window.print()} className="rounded-full bg-navy px-3 py-1.5 font-semibold text-[#f6f2ea] hover:bg-abyss">{t("con.print")}</button>
               </>
+            )}
+            {(user?.role === "admin" || user?.role === "auditor") && (
+              <Link href="/discom" className="hidden rounded-full bg-surface-2 px-3 py-1.5 font-semibold hover:bg-border md:inline">{t("nav.discomLink")}</Link>
             )}
             <LanguageSwitcher />
             <button onClick={() => { signOut(); router.replace("/"); }} className="px-2 text-muted hover:text-text">{t("nav.signOut2")}</button>
@@ -113,12 +116,13 @@ export default function GedaLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const pathname = usePathname();
   const reviewer = user?.role === "reviewer";
-  const staff = !!user && user.role !== "citizen";
+  const staff = !!user && user.role !== "citizen" && !user.role.startsWith("discom_");
 
   useEffect(() => {
     if (loading) return;
     if (!user) router.replace("/login");
     else if (user.role === "citizen") router.replace("/"); // households use the app
+    else if (user.role.startsWith("discom_")) router.replace("/discom"); // DISCOM staff have their own console
     else if (user.role === "reviewer" && pathname !== "/geda/reviews") router.replace("/geda/reviews");
   }, [loading, user, router, pathname]);
 
