@@ -17,6 +17,16 @@ export function istClock(iso: string): string {
   return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
 }
 
+/** "Sun 29 Nov, 12:19 PM" in India time, or just "12:19 PM" when it is today (`now` is injectable for tests). */
+export function istStamp(iso: string, now: Date = new Date()): string {
+  const at = new Date(new Date(iso).getTime() + IST_MS);
+  const today = new Date(now.getTime() + IST_MS);
+  const sameDay = at.toISOString().slice(0, 10) === today.toISOString().slice(0, 10);
+  if (sameDay) return istClock(iso);
+  const day = at.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+  return `${day}, ${istClock(iso)}`;
+}
+
 export const kw = (n: number): string => `${Math.abs(n) < 10 ? n.toFixed(2) : n.toFixed(1)} kW`;
 export const kwh = (n: number): string => `${n < 10 ? n.toFixed(1) : Math.round(n).toLocaleString("en-IN")} kWh`;
 

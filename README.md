@@ -159,6 +159,28 @@ The app's web version adapts to the screen: full screen on a 320 px phone, a cen
 </table>
 </div>
 
+## Live meter and DISCOM console
+
+<div align="center">
+<table>
+<tr>
+<td align="center"><img src="docs/screenshots/app-live.png" width="200" alt="Live energy: power in use, from the panels and to the grid, with a planned power cut" /><br/><b>Live energy</b></td>
+<td align="center"><img src="docs/screenshots/app-agent.png" width="200" alt="Energy agent: a ranked plan with a meter-confirmed action" /><br/><b>Energy agent</b></td>
+<td align="center"><img src="docs/screenshots/app-meter-bill.png" width="200" alt="Bill from your meter: projection, slab split and net-metering credit" /><br/><b>Bill from your meter</b></td>
+<td align="center"><img src="docs/screenshots/app-society-energy.png" width="200" alt="Society energy: the society's meters added together" /><br/><b>Society energy</b></td>
+</tr>
+</table>
+<img src="docs/screenshots/console-discom-overview.png" width="860" alt="DISCOM console overview: meters, demand, rooftop solar, units today and what needs attention" />
+<br/><br/>
+<table>
+<tr>
+<td align="center"><img src="docs/screenshots/console-discom-feeders.png" width="280" alt="DISCOM feeders: load against rating" /><br/><b>Feeders</b></td>
+<td align="center"><img src="docs/screenshots/console-discom-anomalies.png" width="280" alt="DISCOM anomalies, by meter number only" /><br/><b>Anomalies</b></td>
+<td align="center"><img src="docs/screenshots/console-discom-outages.png" width="280" alt="DISCOM outages: plan a cut and notify the households" /><br/><b>Outages</b></td>
+</tr>
+</table>
+</div>
+
 ## Why Nidhi
 
 India's **Mission LiFE** asks every household to live more sustainably. Most people agree, but they can't answer three questions:
