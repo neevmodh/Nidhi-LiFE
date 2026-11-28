@@ -21,6 +21,8 @@ const ITEMS: { name: string; label: MessageKey; icon: [IconName, IconName] }[] =
   { name: "me", label: "tab.me", icon: ["person-circle", "person-circle-outline"] },
 ];
 const SIDEBAR_EXTRA: typeof ITEMS = [
+  { name: "live", label: "live.title", icon: ["pulse", "pulse-outline"] },
+  { name: "meter-agent", label: "agent.title", icon: ["sparkles", "sparkles-outline"] },
   { name: "ask", label: "ask.title", icon: ["chatbubbles", "chatbubbles-outline"] },
   { name: "bill", label: "bill.title", icon: ["receipt", "receipt-outline"] },
   { name: "planner", label: "planner.title", icon: ["time", "time-outline"] },

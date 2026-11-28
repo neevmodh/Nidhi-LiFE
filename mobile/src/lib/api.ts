@@ -31,6 +31,12 @@ import type {
   HouseholdInput,
   Ledger,
   LifeScore,
+  MeterAgent,
+  MeterBill,
+  MeterLive,
+  MeterPoint,
+  MeterRecommendation,
+  SocietyEnergy,
   SocietyRank,
   SocietyView,
   SolarEstimate,
@@ -74,6 +80,12 @@ export type {
   HouseholdInput,
   Ledger,
   LifeScore,
+  MeterAgent,
+  MeterBill,
+  MeterLive,
+  MeterPoint,
+  MeterRecommendation,
+  SocietyEnergy,
   SocietyRank,
   SocietyView,
   SolarEstimate,
@@ -231,6 +243,17 @@ export const api = {
   nudges: () => request<{ temperature_c: number | null; generated_at: string; nudges: Nudge[] }>("/api/nudges"),
   notifications: () => request<{ unread: number; items: AppNotification[] }>("/api/notifications"),
   markNotificationsRead: () => request<void>("/api/notifications/read", { method: "POST" }),
+
+  /** The household's smart meter: live usage, the bill the meter implies, the agent, and the society total. */
+  meterLive: () => request<MeterLive>("/api/meter/live"),
+  meterBill: () => request<MeterBill>("/api/meter/bill"),
+  meterAgent: () => request<MeterAgent>("/api/meter/agent"),
+  /** Simulated meters only: tell the meter an appliance just ran. */
+  meterRan: (kind: "washing_machine" | "geyser" | "ev_charger") =>
+    request<{ kind: string; kw: number; minutes: number }>("/api/meter/appliance", post({ kind })),
+  /** Log a green action as verified because the meter shows it (no photo). */
+  meterConfirm: (code: "shift_heavy_load") => request<ActionLog>("/api/meter/agent/confirm", post({ code })),
+  societyEnergy: () => request<SocietyEnergy>("/api/meter/society"),
 
   scanBill: async (photo: Photo) => {
     const form = new FormData();
