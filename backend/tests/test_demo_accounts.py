@@ -79,3 +79,24 @@ def test_demo_accounts_can_be_turned_off(client, monkeypatch):
     monkeypatch.setattr(get_settings(), "demo_accounts", False)
     assert seed() == []
     assert client.post("/api/auth/login", json={"email": DEMO_DISCOM_EMAIL, "password": get_settings().demo_password}).status_code == 401
+
+
+def test_the_demo_fleet_fills_the_discom_console_and_is_idempotent(client):
+    from app.seed import DEMO_FLEET_SIZE, ensure_demo_fleet
+
+    seed()
+    with SessionLocal() as db:
+        assert ensure_demo_fleet(db) == DEMO_FLEET_SIZE
+        assert ensure_demo_fleet(db) == DEMO_FLEET_SIZE  # a second start adds nothing
+    discom, _ = login(client, DEMO_DISCOM_EMAIL)
+    overview = client.get("/api/discom/overview", headers=discom).json()
+    assert overview["meters"] == DEMO_FLEET_SIZE and overview["simulated_meters"] == DEMO_FLEET_SIZE
+    assert overview["open_flags"] == 5 and overview["active_outages"] == 3 and overview["solar_leads"] == 6
+    feeders = client.get("/api/discom/feeders", headers=discom).json()
+    assert len(feeders) >= 3 and all(f["meters"] >= 1 for f in feeders)
+    assert len(client.get("/api/discom/series", headers=discom).json()) > 90
+    assert len(client.get("/api/discom/anomalies?state=all", headers=discom).json()) == 7
+    assert len(client.get("/api/discom/outages", headers=discom).json()) == 3
+    assert len(client.get("/api/discom/solar-leads", headers=discom).json()) == 6
+    with SessionLocal() as db:
+        assert db.scalar(select(func.count(User.id)).where(User.email.like("demo-home-%@example.com"))) == DEMO_FLEET_SIZE
